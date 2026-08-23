@@ -78,6 +78,16 @@ public:
 
   U8G2 &display() override { return _display; }
 
+  void beginDisplay() override {
+    _display.begin();
+    // L'init U8g2 par défaut laisse ce panneau très sombre : on reprend
+    // les réglages de l'init Adafruit SSD1306 (pré-charge et niveau de
+    // désélection VCOMH au maximum), puis contraste à fond.
+    _display.sendF("ca", 0x0d9, 0x0f1);  // pré-charge : phase1=1, phase2=15
+    _display.sendF("ca", 0x0db, 0x040);  // VCOMH deselect level maxi
+    _display.setContrast(255);
+  }
+
   RadioTraits radio() const override {
     RadioTraits t;
     t.pins.nss = kPinLoraNss;
