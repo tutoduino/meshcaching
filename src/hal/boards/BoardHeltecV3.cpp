@@ -18,8 +18,8 @@ constexpr uint8_t kPinLoraDio1 = 14;
 constexpr uint8_t kPinOledSda = 17;
 constexpr uint8_t kPinOledScl = 18;
 constexpr uint8_t kPinOledReset = 21;
-constexpr uint8_t kPinVext = 36;      // alim de l'OLED, actif a l'etat bas
-constexpr uint8_t kPinButtonPrg = 0;  // relie a la masse quand presse
+constexpr uint8_t kPinVext = 36;      // alim de l'OLED, actif à l'état bas
+constexpr uint8_t kPinButtonPrg = 0;  // relié à la masse quand pressé
 
 const ButtonSpec kButtons[] = {
     {Key::Ok, kPinButtonPrg, /*activeLow=*/true, /*internalPullup=*/true},
@@ -60,7 +60,7 @@ public:
   }
 
 private:
-  // Le reset materiel de l'OLED (broche 21) est gere par U8g2 au begin()
+  // Le reset matériel de l'OLED (broche 21) est géré par U8g2 au begin()
   U8G2_SSD1306_128X64_NONAME_F_HW_I2C _display{U8G2_R0, kPinOledReset,
                                                kPinOledScl, kPinOledSda};
 };

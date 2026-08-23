@@ -37,7 +37,7 @@ void Radio::setRxGainMode(RxGainMode mode) {
   }
   _board.setFemLna(mode == RxGainMode::kFemLna);
   _lora.setRxBoostedGainMode(mode == RxGainMode::kSxBoost);
-  startReceive();  // reapplique l'aiguillage RX du FEM
+  startReceive();  // réapplique l'aiguillage RX du FEM
 }
 
 int16_t Radio::begin(float freqMhz, float bwKhz, uint8_t sf, uint8_t cr,
@@ -50,7 +50,7 @@ int16_t Radio::begin(float freqMhz, float bwKhz, uint8_t sf, uint8_t cr,
     SPI.begin();
   }
 #else
-  SPI.begin();  // broches fixees par la variante
+  SPI.begin();  // broches fixées par la variante
 #endif
 
   _antennaDbm =
@@ -70,8 +70,8 @@ int16_t Radio::begin(float freqMhz, float bwKhz, uint8_t sf, uint8_t cr,
     _lora.setRfSwitchPins(_traits.pins.rxEn, _traits.pins.txEn);
   }
   _lora.setCurrentLimit(_traits.currentLimitmA);
-  // La chaine de gain RX (boost SX126x / LNA FEM) est appliquee ensuite
-  // par l'application via setRxGainMode(), selon la config persistee.
+  // La chaîne de gain RX (boost SX126x / LNA FEM) est appliquée ensuite
+  // par l'application via setRxGainMode(), selon la config persistée.
 
   _lora.setDio1Action(onDio1Isr);
   return startReceive();
@@ -80,9 +80,9 @@ int16_t Radio::begin(float freqMhz, float bwKhz, uint8_t sf, uint8_t cr,
 int16_t Radio::transmit(const uint8_t *data, size_t len) {
   _board.radioTxMode();
   int16_t state = _lora.transmit(data, len);
-  // transmit() declenche aussi une interruption DIO1 de "fin d'emission",
-  // qui peut avoir arme le drapeau a tort : on l'efface avant de repasser
-  // en ecoute, pour ne pas traiter du vide comme un paquet recu.
+  // transmit() déclenche aussi une interruption DIO1 de "fin d'émission",
+  // qui peut avoir armé le drapeau à tort : on l'efface avant de repasser
+  // en écoute, pour ne pas traiter du vide comme un paquet reçu.
   s_packetFlag = false;
   startReceive();
   return state;

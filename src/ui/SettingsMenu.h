@@ -6,12 +6,12 @@
 #include "../hal/Settings.h"
 
 // =====================================================================
-// Menu de reglages : repeteur cible (4 digits hex), puissance TX,
-// chaine de gain RX (+ LNA FEM sur les cartes qui en ont un).
+// Menu de réglages : répéteur cible (4 digits hex), puissance TX,
+// chaîne de gain RX (+ LNA FEM sur les cartes qui en ont un).
 //
 // Pilotage selon les touches de la carte :
 //  - croix directionnelle (Wio Tracker L1) : Up/Down navigue ou modifie,
-//    Left/Right change de digit, Ok valide, Back annule l'edition ou
+//    Left/Right change de digit, Ok valide, Back annule l'édition ou
 //    sort du menu ;
 //  - bouton unique (Heltec) : clic = suivant / modifier, appui long =
 //    valider ; la sortie passe par l'item "Retour" ou le timeout.
@@ -68,6 +68,6 @@ private:
   uint8_t _cursor = 0;
   uint8_t _digit = 0;
   AppSettings _settings{};
-  AppSettings _backup{};  // valeurs a restaurer si l'edition est annulee
+  AppSettings _backup{};  // valeurs à restaurer si l'édition est annulée
   uint32_t _lastActivityMs = 0;
 };

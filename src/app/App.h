@@ -9,11 +9,11 @@
 #include "../ui/StatusScreen.h"
 
 // =====================================================================
-// Application : geolocalisation d'un repeteur MeshCore.
+// Application : géolocalisation d'un répéteur MeshCore.
 //
-// Affiche le RSSI et le temps ecoule depuis la derniere reception d'un
-// paquet provenant du repeteur cible, permet de le "pinger" avec un
-// paquet TRACE, et propose un menu de reglages persistes (repeteur
+// Affiche le RSSI et le temps écoulé depuis la dernière réception d'un
+// paquet provenant du répéteur cible, permet de le "pinger" avec un
+// paquet TRACE, et propose un menu de réglages persistés (répéteur
 // cible, puissance TX, gain RX).
 // =====================================================================
 class App {
@@ -24,7 +24,7 @@ public:
   void loop();
 
 private:
-  // Dernier paquet vu du repeteur cible
+  // Dernier paquet vu du répéteur cible
   struct RepeaterStatus {
     bool hasPacket = false;
     uint32_t lastSeenMs = 0;
@@ -48,8 +48,8 @@ private:
 
   AppSettings _settings{};
   RepeaterStatus _target;
-  // Tag de la derniere requete TRACE envoyee, et instant d'envoi :
-  // permet de reconnaitre la reponse (qui renvoie ce meme tag).
+  // Tag de la dernière requête TRACE envoyée, et instant d'envoi :
+  // permet de reconnaître la réponse (qui renvoie ce même tag).
   uint32_t _lastSentTag = 0;
   uint32_t _lastPingMs = 0;
   uint32_t _lastDisplayRefreshMs = 0;

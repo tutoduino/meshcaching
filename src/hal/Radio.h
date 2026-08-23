@@ -4,37 +4,37 @@
 #include "Board.h"
 #include "RxGain.h"
 
-// Enveloppe du SX1262 (RadioLib) : le cablage vient de la description de
-// carte, et la puissance TX s'exprime "a l'antenne" — le gain d'un
-// eventuel FEM externe est retranche avant d'etre passe au SX1262.
+// Enveloppe du SX1262 (RadioLib) : le câblage vient de la description de
+// carte, et la puissance TX s'exprime "à l'antenne" — le gain d'un
+// éventuel FEM externe est retranché avant d'être passé au SX1262.
 //
-// La reception est pilotee par interruption : DIO1 leve un drapeau,
-// consomme tranquillement dans loop() via packetAvailable() (regle de
-// base avec RadioLib : jamais de traitement dans l'ISR elle-meme).
+// La réception est pilotée par interruption : DIO1 lève un drapeau,
+// consommé tranquillement dans loop() via packetAvailable() (règle de
+// base avec RadioLib : jamais de traitement dans l'ISR elle-même).
 class Radio {
 public:
   explicit Radio(Board &board);
 
-  // Configure et met en ecoute. Renvoie RADIOLIB_ERR_NONE si tout va bien.
+  // Configure et met en écoute. Renvoie RADIOLIB_ERR_NONE si tout va bien.
   int16_t begin(float freqMhz, float bwKhz, uint8_t sf, uint8_t cr,
                 int8_t txPowerDbm);
 
-  // Puissance a l'antenne, bornee a la plage de la carte.
+  // Puissance à l'antenne, bornée à la plage de la carte.
   void setTxPowerDbm(int8_t antennaDbm);
   int8_t txPowerDbm() const { return _antennaDbm; }
 
-  // Chaine de gain en reception (boost interne du SX126x, LNA du FEM si
-  // la carte en a un, ou rien) ; remet la radio en ecoute.
+  // Chaîne de gain en réception (boost interne du SX126x, LNA du FEM si
+  // la carte en a un, ou rien) ; remet la radio en écoute.
   void setRxGainMode(RxGainMode mode);
 
-  // Emet puis repasse en ecoute.
+  // Émet puis repasse en écoute.
   int16_t transmit(const uint8_t *data, size_t len);
 
-  // true si un paquet est arrive depuis le dernier appel
+  // true si un paquet est arrivé depuis le dernier appel
   bool packetAvailable();
 
-  // Lit le paquet recu puis remet la radio en ecoute. len vaut 0 si le
-  // paquet etait vide ou trop grand pour buf.
+  // Lit le paquet reçu puis remet la radio en écoute. len vaut 0 si le
+  // paquet était vide ou trop grand pour buf.
   int16_t readPacket(uint8_t *buf, size_t maxLen, size_t &len,
                      float &rssi, float &snr);
 

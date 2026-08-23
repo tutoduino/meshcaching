@@ -4,19 +4,19 @@
 #include "RxGain.h"
 
 // =====================================================================
-// Configuration persistee de l'application, modifiable via le menu.
+// Configuration persistée de l'application, modifiable via le menu.
 // Stockage : NVS (Preferences) sur ESP32, LittleFS interne sur nRF52.
-// Les defauts d'usine sont composes par l'application (AppConfig + Board).
+// Les défauts d'usine sont composés par l'application (AppConfig + Board).
 // =====================================================================
 struct AppSettings {
-  uint8_t targetPrefix[2];  // prefixe de cle publique du repeteur cible
-  int8_t txPowerDbm;        // puissance d'emission "a l'antenne"
+  uint8_t targetPrefix[2];  // préfixe de clé publique du répéteur cible
+  int8_t txPowerDbm;        // puissance d'émission "à l'antenne"
   RxGainMode rxGainMode;
 };
 
 bool settingsEqual(const AppSettings &a, const AppSettings &b);
 
-// false si aucune config valide n'est stockee (premier demarrage,
-// version incompatible) : l'appelant part alors des defauts d'usine.
+// false si aucune config valide n'est stockée (premier démarrage,
+// version incompatible) : l'appelant part alors des défauts d'usine.
 bool settingsLoad(AppSettings &out);
 void settingsSave(const AppSettings &s);

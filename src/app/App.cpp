@@ -9,7 +9,7 @@
 #include "../hal/SysRandom.h"
 #include "../mesh/Protocol.h"
 
-// Formatte un float avec une decimale sans dependre du %f de printf,
+// Formate un float avec une décimale sans dépendre du %f de printf,
 // qui n'est pas fiable sur toutes les plateformes (nRF52 notamment).
 static void formatDb(float value, char *out, size_t outLen) {
   int v10 = (int)lroundf(value * 10.0f);
@@ -25,7 +25,7 @@ App::App(Board &board)
 
 void App::loadSettings() {
   if (!settingsLoad(_settings)) {
-    // Premier demarrage (ou format incompatible) : defauts d'usine
+    // Premier démarrage (ou format incompatible) : défauts d'usine
     memcpy(_settings.targetPrefix, config::kTargetPubkeyPrefix,
            sizeof(_settings.targetPrefix));
     _settings.txPowerDbm = _board.txPowerDefaultDbm();
@@ -58,7 +58,7 @@ void App::setup() {
   _buttons.begin(specs, buttonCount);
 
   loadSettings();
-  Serial.printf("Repeteur cible : %02X%02X\n", _settings.targetPrefix[0],
+  Serial.printf("Répéteur cible : %02X%02X\n", _settings.targetPrefix[0],
                 _settings.targetPrefix[1]);
 
   Serial.println(F("Initialisation LoRa..."));
@@ -96,8 +96,8 @@ void App::loop() {
     applyMenuResult();
   }
 
-  // Rafraichit l'ecran principal une fois par seconde (compteur "temps
-  // ecoule") — jamais par-dessus le menu
+  // Rafraîchit l'écran principal une fois par seconde (compteur "temps
+  // écoulé") — jamais par-dessus le menu
   if (!_menu.isOpen() &&
       millis() - _lastDisplayRefreshMs >= config::kDisplayRefreshMs) {
     _lastDisplayRefreshMs = millis();
@@ -111,7 +111,7 @@ void App::loop() {
 
 void App::handleMainEvent(const ButtonEvent &event) {
   if (event.key == Key::Ok && !event.longPress) {
-    // Ping TRACE force vers le repeteur cible, au lieu d'attendre
+    // Ping TRACE forcé vers le répéteur cible, au lieu d'attendre
     // passivement son prochain paquet
     sendTracePing();
   } else if ((event.key == Key::Ok && event.longPress) ||
@@ -130,13 +130,13 @@ void App::applyMenuResult() {
   _radio.setTxPowerDbm(_settings.txPowerDbm);
   _radio.setRxGainMode(_settings.rxGainMode);
   if (targetChanged) {
-    // Nouveau repeteur suivi : on repart de zero
+    // Nouveau répéteur suivi : on repart de zéro
     _target = RepeaterStatus();
     _lastSentTag = 0;
   }
   if (changed) {
     settingsSave(_settings);
-    Serial.printf("Config sauvegardee : cible=%02X%02X TX=%ddBm gainRX=%u\n",
+    Serial.printf("Config sauvegardée : cible=%02X%02X TX=%ddBm gainRX=%u\n",
                   _settings.targetPrefix[0], _settings.targetPrefix[1],
                   _settings.txPowerDbm, (unsigned)_settings.rxGainMode);
   }
@@ -157,18 +157,18 @@ void App::refreshDisplay() {
 
 void App::sendTracePing() {
   uint8_t buf[meshcore::kTracePingLen];
-  uint32_t tag = sysRandom32();  // identifiant aleatoire de cette requete
+  uint32_t tag = sysRandom32();  // identifiant aléatoire de cette requête
   size_t len =
       meshcore::buildTracePing(buf, tag, _settings.targetPrefix[0]);
 
-  _lastSentTag = tag;  // on retiendra ce tag pour reconnaitre la reponse
+  _lastSentTag = tag;  // on retiendra ce tag pour reconnaître la réponse
   _lastPingMs = millis();
 
-  Serial.printf("Envoi TRACE (tag=%08lX) vers REPETEUR %02X...\n",
+  Serial.printf("Envoi TRACE (tag=%08lX) vers RÉPÉTEUR %02X...\n",
                 (unsigned long)tag, _settings.targetPrefix[0]);
   int16_t state = _radio.transmit(buf, len);
   if (state != RADIOLIB_ERR_NONE) {
-    Serial.print(F("Erreur d'emission : "));
+    Serial.print(F("Erreur d'émission : "));
     Serial.println(state);
   }
 }
@@ -179,8 +179,8 @@ bool App::packetComesFromTarget(const uint8_t *packet, size_t len) {
     return false;
   }
 
-  // Une reponse TRACE ne se reconnait que par son tag, renvoye tel quel :
-  // on la compare a notre dernier ping, dans la fenetre de temps admise.
+  // Une réponse TRACE ne se reconnaît que par son tag, renvoyé tel quel :
+  // on la compare à notre dernier ping, dans la fenêtre de temps admise.
   if (pkt.payloadType == meshcore::kPayloadTrace) {
     uint32_t tag;
     if (!meshcore::traceTag(pkt, tag) || _lastSentTag == 0) {
@@ -192,8 +192,8 @@ bool App::packetComesFromTarget(const uint8_t *packet, size_t len) {
     return tag == _lastSentTag;
   }
 
-  // Sinon : l'identifiant du dernier noeud emetteur, compare au prefixe
-  // de cle publique du repeteur cible.
+  // Sinon : l'identifiant du dernier nœud émetteur, comparé au préfixe
+  // de clé publique du répéteur cible.
   const uint8_t *id = nullptr;
   size_t idLen = 0;
   if (!meshcore::lastHopId(pkt, id, idLen)) {
@@ -213,11 +213,11 @@ void App::handleIncomingPacket() {
     return;
   }
   // On ignore les paquets illisibles OU dont le CRC est invalide : un
-  // paquet corrompu ne doit jamais etre interprete comme venant du
-  // repeteur cible (risque de fausse detection).
+  // paquet corrompu ne doit jamais être interprété comme venant du
+  // répéteur cible (risque de fausse détection).
   if (state != RADIOLIB_ERR_NONE) {
     if (state != RADIOLIB_ERR_CRC_MISMATCH) {
-      Serial.print(F("Erreur de reception : "));
+      Serial.print(F("Erreur de réception : "));
       Serial.println(state);
     }
     return;
@@ -227,9 +227,9 @@ void App::handleIncomingPacket() {
   char rssiStr[16], snrStr[16];
   formatDb(rssi, rssiStr, sizeof(rssiStr));
   formatDb(snr, snrStr, sizeof(snrStr));
-  Serial.printf("Paquet recu : len=%u RSSI=%s dBm SNR=%s dB %s\n",
+  Serial.printf("Paquet reçu : len=%u RSSI=%s dBm SNR=%s dB %s\n",
                 (unsigned)len, rssiStr, snrStr,
-                isTarget ? "[REPETEUR CIBLE]" : "");
+                isTarget ? "[RÉPÉTEUR CIBLE]" : "");
 
   if (isTarget) {
     _target.hasPacket = true;
@@ -237,7 +237,7 @@ void App::handleIncomingPacket() {
     _target.rssi = rssi;
     _target.snr = snr;
     if (!_menu.isOpen()) {
-      refreshDisplay();  // mise a jour immediate de l'ecran
+      refreshDisplay();  // mise à jour immédiate de l'écran
     }
   }
 }

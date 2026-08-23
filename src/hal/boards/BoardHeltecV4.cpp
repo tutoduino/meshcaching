@@ -1,15 +1,15 @@
 #ifdef BOARD_HELTEC_V4
 // =====================================================================
-// Heltec WiFi LoRa 32 V4, revision 4.3 — ESP32-S3R2 + SX1262, OLED
+// Heltec WiFi LoRa 32 V4, révision 4.3 — ESP32-S3R2 + SX1262, OLED
 // SSD1306 128x64 (I2C), un seul bouton utilisateur (PRG).
 //
-// Brochage LoRa et OLED identique au V3, mais : Vext actif a l'etat
+// Brochage LoRa et OLED identique au V3, mais : Vext actif à l'état
 // HAUT, et un FEM (front-end module) KCT8103L entre le SX1262 et
-// l'antenne, qui ajoute ~12 dB en emission. Valeurs reprises du firmware
+// l'antenne, qui ajoute ~12 dB en émission. Valeurs reprises du firmware
 // MeshCore (variants/heltec_v4).
 //
-// Note : la revision 4.2 embarque un autre FEM (GC1109, pilotage
-// different) et n'est pas geree ici.
+// Note : la révision 4.2 embarque un autre FEM (GC1109, pilotage
+// différent) et n'est pas gérée ici.
 // =====================================================================
 #include "../Board.h"
 
@@ -24,19 +24,19 @@ constexpr uint8_t kPinLoraBusy = 13;
 constexpr uint8_t kPinLoraDio1 = 14;
 
 // FEM KCT8103L : LDO d'alimentation, CSD (enable) et CTX (aiguillage :
-// HIGH = PA en emission / LNA contourne en reception, LOW = LNA actif).
+// HIGH = PA en émission / LNA contourné en réception, LOW = LNA actif).
 constexpr uint8_t kPinFemLdo = 7;
 constexpr uint8_t kPinFemCsd = 2;
 constexpr uint8_t kPinFemCtx = 5;
-// Gain du PA en emission : MeshCore documente 10 dBm demandes au SX1262
-// pour 22 dBm mesures a l'antenne.
+// Gain du PA en émission : MeshCore documente 10 dBm demandés au SX1262
+// pour 22 dBm mesurés à l'antenne.
 constexpr int8_t kFemTxGainDb = 12;
 
 constexpr uint8_t kPinOledSda = 17;
 constexpr uint8_t kPinOledScl = 18;
 constexpr uint8_t kPinOledReset = 21;
-constexpr uint8_t kPinVext = 36;      // actif a l'etat HAUT sur le V4
-constexpr uint8_t kPinButtonPrg = 0;  // relie a la masse quand presse
+constexpr uint8_t kPinVext = 36;      // actif à l'état HAUT sur le V4
+constexpr uint8_t kPinButtonPrg = 0;  // relié à la masse quand pressé
 
 const ButtonSpec kButtons[] = {
     {Key::Ok, kPinButtonPrg, /*activeLow=*/true, /*internalPullup=*/true},
@@ -51,13 +51,13 @@ public:
     digitalWrite(kPinVext, HIGH);  // allume le rail Vext (OLED)
 
     // Alimente puis configure le FEM. CSD haut = FEM actif ; CTX haut au
-    // depart = PA dans le chemin d'emission, LNA contourne en reception.
-    // L'aiguillage RX est ensuite gere par radioRxMode() selon setFemLna().
-    // Attention si le LNA est active : son gain s'ajoute au RSSI mesure
-    // par le SX1262, precisement la donnee que cet appareil affiche.
+    // depart = PA dans le chemin d'émission, LNA contourné en réception.
+    // L'aiguillage RX est ensuite géré par radioRxMode() selon setFemLna().
+    // Attention si le LNA est activé : son gain s'ajoute au RSSI mesure
+    // par le SX1262, précisément la donnée que cet appareil affiche.
     pinMode(kPinFemLdo, OUTPUT);
     digitalWrite(kPinFemLdo, HIGH);
-    delay(1);  // temps de demarrage du FEM
+    delay(1);  // temps de démarrage du FEM
     pinMode(kPinFemCsd, OUTPUT);
     digitalWrite(kPinFemCsd, HIGH);
     pinMode(kPinFemCtx, OUTPUT);
