@@ -1,0 +1,66 @@
+# Release : à chaque tag semver (vX.Y.Z), compile les quatre cibles et
+# publie les binaires prêts à flasher (cf. scripts/package.sh).
+name: release
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # git describe a besoin de l'historique des tags
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+
+      - name: Installe PlatformIO et esptool
+        run: pip install platformio esptool
+
+      - name: Compile toutes les cibles
+        run: pio run
+
+      - name: Assemble les binaires
+        run: scripts/package.sh "$GITHUB_REF_NAME" dist
+
+      - name: Publie la release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          body: |
+            ## Flasher le firmware
+
+            ### Le plus simple : le flasher web MeshCore
+
+            1. Ouvrir [flasher.meshcore.io](https://flasher.meshcore.io)
+               (Chrome ou Edge, la carte branchée en USB) ;
+            2. choisir **« Custom Firmware »**, tout en bas de la liste des
+               modèles de cartes ;
+            3. sélectionner le fichier correspondant à votre carte
+               ci-dessous, et flasher.
+
+            | Carte | Fichier |
+            |---|---|
+            | Heltec WiFi LoRa 32 V3 | `meshcaching-heltec_v3-${{ github.ref_name }}.bin` |
+            | Heltec WiFi LoRa 32 V4.3 | `meshcaching-heltec_v4_3-${{ github.ref_name }}.bin` |
+            | Heltec WiFi LoRa 32 V4 R8 | `meshcaching-heltec_v4_r8-${{ github.ref_name }}.bin` |
+            | Seeed Wio Tracker L1 Pro | `meshcaching-wio_tracker_l1-${{ github.ref_name }}.uf2` |
+
+            ### Alternatives en ligne de commande
+
+            - **Heltec (ESP32)** : image complète à flasher à l'adresse 0 —
+              `esptool --chip esp32s3 write_flash 0x0 meshcaching-<carte>-${{ github.ref_name }}.bin`
+            - **Wio Tracker L1 (nRF52)** : double appui sur RESET (un disque
+              USB apparaît), puis glisser-déposer le fichier `.uf2` dessus.

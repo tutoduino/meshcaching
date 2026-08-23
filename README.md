@@ -26,6 +26,15 @@ déclinaisons TFT / e-ink. Le type de FEM est vérifié au démarrage (même
 détection que MeshCore, via le niveau de repos de la broche CSD) : un V4 ≤ 4.2
 flashé par erreur s'arrête sur « Carte incompatible » sans jamais émettre.
 
+## Flasher une release
+
+Des binaires prêts à flasher sont publiés pour chaque tag `vX.Y.Z` (onglet
+*Releases*). Le plus simple : l'outil web [flasher.meshcore.io](https://flasher.meshcore.io),
+en choisissant « Custom Firmware » tout en bas de la liste des modèles de
+cartes (les alternatives esptool / UF2 sont dans les notes de release). La
+version (`git describe`) est injectée au build et s'affiche au démarrage
+sous le titre MESHCACHING.
+
 ## Compilation
 
 ```sh
