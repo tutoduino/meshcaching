@@ -1,0 +1,42 @@
+# Usage : `task build`, `task upload`, `task flash` (upload + moniteur série).
+# Port série auto-détecté par PlatformIO ; forcer avec `task upload PORT=/dev/ttyACM0`.
+# Si l'upload echoue : double-appui sur RESET = mode bootloader (port DFU), puis relancer.
+version: '3'
+
+tasks:
+  default:
+    silent: true
+    cmds:
+      - task --list
+
+  build:
+    desc: Compile le firmware
+    cmds:
+      - pio run
+
+  upload:
+    desc: Compile et téléverse vers le Wio Tracker L1
+    cmds:
+      - pio run --target upload {{if .PORT}}--upload-port {{.PORT}}{{end}}
+
+  monitor:
+    desc: Moniteur série (115200 bauds, Ctrl-C pour quitter)
+    interactive: true
+    cmds:
+      - pio device monitor {{if .PORT}}--port {{.PORT}}{{end}}
+
+  flash:
+    desc: Téléverse puis ouvre le moniteur série
+    cmds:
+      - task: upload
+      - task: monitor
+
+  ports:
+    desc: Liste les ports série détectés
+    cmds:
+      - pio device list
+
+  clean:
+    desc: Supprime les artefacts de build
+    cmds:
+      - pio run --target clean
