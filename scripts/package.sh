@@ -41,10 +41,14 @@ for bootloader in "$BUILD"/*/bootloader.bin; do
   packaged=$((packaged + 1))
 done
 
-# Cibles nRF52 : tout environnement qui a produit un firmware.hex
+# Cibles nRF52 : tout environnement qui a produit un firmware.hex.
+# Deux formats : le paquet DFU (firmware.zip, généré par la plateforme
+# nordicnrf52) attendu par flasher.meshcore.io et adafruit-nrfutil, et
+# l'UF2 pour le glisser-déposer sur le disque du bootloader.
 for hex in "$BUILD"/*/firmware.hex; do
   [ -e "$hex" ] || continue
   target=$(basename "$(dirname "$hex")")
+  cp "$BUILD/$target/firmware.zip" "$DIST/meshcaching-$target-$VERSION.zip"
   python3 scripts/hex2uf2.py "$hex" \
     "$DIST/meshcaching-$target-$VERSION.uf2" \
     0xADA52840
