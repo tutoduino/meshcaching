@@ -3,8 +3,8 @@
 // Heltec WiFi LoRa 32 V4 — deux déclinaisons partagent cette carte :
 //  - BOARD_HELTEC_V4_3 : révision 4.3 (ESP32-S3R2, 2 Mo PSRAM) ;
 //  - BOARD_HELTEC_V4_R8 : série "R8" (ESP32-S3R8, 8 Mo PSRAM), vendue
-//    ensuite, qui ne diffère ici que par son rail Vext (GPIO40, actif
-//    à l'état BAS, contre GPIO36 actif HAUT sur la 4.3).
+//    ensuite, qui ne diffère ici que par la broche de son rail Vext
+//    (GPIO40 au lieu de GPIO36).
 //
 // Commun aux deux : SX1262 (brochage LoRa et OLED identique au V3),
 // OLED 128x64 piloté en SSD1306, un seul bouton utilisateur (PRG), et
@@ -43,15 +43,20 @@ constexpr uint8_t kPinOledScl = 18;
 constexpr uint8_t kPinOledReset = 21;
 constexpr uint8_t kPinButtonPrg = 0;  // relié à la masse quand pressé
 
+// Vext (alim de l'OLED) : actif à l'état BAS sur toute la série — le
+// rail est commuté par un MOSFET canal P (schéma officiel HTIT-WB32LAF
+// V4.3, transistor Q2 AO3401A), comme sur le V3. Ne pas se fier au
+// PIN_VEXT_EN_ACTIVE=HIGH de la variante heltec_v4 de MeshCore : leur
+// écran est construit sans référence au rail, ce niveau n'est jamais
+// appliqué (et leur variante R8, plus récente, dit bien LOW).
 #ifdef BOARD_HELTEC_V4_R8
 constexpr char kBoardName[] = "Heltec WiFi LoRa 32 V4 R8";
 constexpr uint8_t kPinVext = 40;
-constexpr uint8_t kVextOnLevel = LOW;
 #else
 constexpr char kBoardName[] = "Heltec WiFi LoRa 32 V4.3";
 constexpr uint8_t kPinVext = 36;
-constexpr uint8_t kVextOnLevel = HIGH;
 #endif
+constexpr uint8_t kVextOnLevel = LOW;
 
 const ButtonSpec kButtons[] = {
     {Key::Ok, kPinButtonPrg, /*activeLow=*/true, /*internalPullup=*/true},
