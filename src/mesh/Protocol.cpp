@@ -57,12 +57,11 @@ bool lastHopId(const PacketView &pkt, const uint8_t *&id, size_t &idLen) {
     idLen = kAdvertPubkeyLen;
     return true;
   }
-  if (pkt.payloadLen >= 1) {
-    // Paquet direct zéro-hop : le premier octet du payload est le hash source
-    id = pkt.payload;
-    idLen = 1;
-    return true;
-  }
+  // Autres paquets zéro-hop : le début du payload n'identifie PAS
+  // l'émetteur (hash du destinataire pour un message direct, hash de
+  // canal pour un message de groupe, CRC pour un ACK...). L'ancienne
+  // heuristique "premier octet = hash source" provoquait de fausses
+  // détections : émetteur indéterminable, donc pas de correspondance.
   return false;
 }
 

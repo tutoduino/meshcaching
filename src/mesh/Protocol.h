@@ -42,9 +42,11 @@ struct PacketView {
 bool parse(const uint8_t *raw, size_t len, PacketView &out);
 
 // Identifiant du dernier nœud ayant émis ce paquet : dernier hash du
-// chemin, ou l'émetteur lui-même pour un paquet zéro-hop. Renvoie false
-// si indéterminable — c'est le cas des paquets TRACE, qui n'ont pas de
-// hash en tête de payload (cf. traceTag()).
+// chemin ou, pour une annonce zéro-hop, la clé publique complète de
+// l'émetteur. Renvoie false si indéterminable : paquets TRACE (pas de
+// hash en tête de payload, cf. traceTag()) et tout autre paquet
+// zéro-hop — leur payload identifie le destinataire ou le canal, jamais
+// l'émetteur.
 bool lastHopId(const PacketView &pkt, const uint8_t *&id, size_t &idLen);
 
 // Tag d'un paquet TRACE (false si le paquet n'en est pas un, ou est
