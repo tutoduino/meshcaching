@@ -35,8 +35,8 @@ void App::loadSettings() {
   if (_settings.txPowerDbm > _board.txPowerMaxDbm()) {
     _settings.txPowerDbm = _board.txPowerMaxDbm();
   }
-  if (_settings.txPowerDbm < kTxPowerMinDbm) {
-    _settings.txPowerDbm = kTxPowerMinDbm;
+  if (_settings.txPowerDbm < _board.txPowerMinDbm()) {
+    _settings.txPowerDbm = _board.txPowerMinDbm();
   }
   if (_settings.rxGainMode == RxGainMode::kFemLna && !_board.hasFemLna()) {
     _settings.rxGainMode = RxGainMode::kSxBoost;
@@ -225,8 +225,25 @@ void App::sendTracePing() {
   if (!_menu.isOpen()) {
     refreshDisplay();  // témoin LBT pendant l'écoute bloquante
   }
-  if (!_radio.waitChannelClear(config::kLbtDeadlineMs, config::kLbtSlotMinMs,
-                               config::kLbtSlotMaxMs)) {
+  bool channelClear = false;
+  for (;;) {
+    // Un vrai paquet a pu arriver pendant le slot d'attente (la radio
+    // reste en écoute) : on le traite au lieu de le perdre.
+    if (_radio.packetAvailable()) {
+      handleIncomingPacket();
+    }
+    if (_radio.channelClear()) {
+      channelClear = true;
+      break;
+    }
+    if (millis() - now >= config::kLbtDeadlineMs) {
+      break;
+    }
+    delay(config::kLbtSlotMinMs +
+          sysRandom32() %
+              (config::kLbtSlotMaxMs - config::kLbtSlotMinMs + 1));
+  }
+  if (!channelClear) {
     _txPhase = TxPhase::Busy;
     _txPhaseSinceMs = millis();
     Serial.println(F("LBT : canal occupé, émission abandonnée"));

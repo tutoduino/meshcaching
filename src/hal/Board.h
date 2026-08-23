@@ -77,6 +77,12 @@ public:
   // Puissance TX "à l'antenne", bornes propres à la carte.
   virtual int8_t txPowerMaxDbm() const = 0;
   virtual int8_t txPowerDefaultDbm() const { return txPowerMaxDbm(); }
+  // Plancher utile : le plancher du SX1262 remonté du gain TX du FEM —
+  // en dessous, la consigne serait clampée côté puce et la puissance
+  // affichée mentirait sur la puissance réellement émise.
+  int8_t txPowerMinDbm() const {
+    return (int8_t)(kTxPowerMinDbm + radio().femTxGainDb);
+  }
 
   // Commutation TX/RX d'un FEM externe, si la carte en a un à piloter.
   virtual void radioTxMode() {}

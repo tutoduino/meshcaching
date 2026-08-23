@@ -27,12 +27,11 @@ public:
   // la carte en a un, ou rien) ; remet la radio en écoute.
   void setRxGainMode(RxGainMode mode);
 
-  // LBT : attend que le canal soit libre (CAD du SX126x), en retentant
-  // après un slot court aléatoire, jusqu'à la deadline. Renvoie false si
-  // le canal est resté occupé (la radio est alors remise en écoute) ;
-  // renvoie true canal libre, à enchaîner immédiatement avec transmit().
-  bool waitChannelClear(uint32_t deadlineMs, uint32_t slotMinMs,
-                        uint32_t slotMaxMs);
+  // Un cycle de CAD (LBT) : true si le canal est libre. Remet la radio
+  // en écoute et n'efface que le drapeau levé par le CAD lui-même — la
+  // boucle d'essais vit chez l'appelant, qui peut ainsi traiter un vrai
+  // paquet arrivé entre deux cycles au lieu de le perdre.
+  bool channelClear();
 
   // Émet puis repasse en écoute.
   int16_t transmit(const uint8_t *data, size_t len);

@@ -2,8 +2,6 @@
 
 #include <SPI.h>
 
-#include "SysRandom.h"
-
 #if defined(ESP32)
 #define RADIO_ISR_ATTR IRAM_ATTR
 #else
@@ -28,8 +26,8 @@ int8_t Radio::chipPowerDbm(int8_t antennaDbm) const {
 }
 
 void Radio::setTxPowerDbm(int8_t antennaDbm) {
-  _antennaDbm =
-      (int8_t)constrain(antennaDbm, kTxPowerMinDbm, _board.txPowerMaxDbm());
+  _antennaDbm = (int8_t)constrain(antennaDbm, _board.txPowerMinDbm(),
+                                  _board.txPowerMaxDbm());
   _lora.setOutputPower(chipPowerDbm(_antennaDbm));
 }
 
@@ -55,8 +53,8 @@ int16_t Radio::begin(float freqMhz, float bwKhz, uint8_t sf, uint8_t cr,
   SPI.begin();  // broches fixées par la variante
 #endif
 
-  _antennaDbm =
-      (int8_t)constrain(txPowerDbm, kTxPowerMinDbm, _board.txPowerMaxDbm());
+  _antennaDbm = (int8_t)constrain(txPowerDbm, _board.txPowerMinDbm(),
+                                  _board.txPowerMaxDbm());
   int16_t state = _lora.begin(freqMhz, bwKhz, sf, cr,
                               RADIOLIB_SX126X_SYNC_WORD_PRIVATE,
                               chipPowerDbm(_antennaDbm), 8,
@@ -77,35 +75,32 @@ int16_t Radio::begin(float freqMhz, float bwKhz, uint8_t sf, uint8_t cr,
 
   if (_traits.femRxPatch) {
     // Registre 0x8B5 non documenté : "improved RX" pour les Heltec V4 à
-    // FEM, en parité avec le firmware MeshCore (recette Heltec).
+    // FEM, en parité avec le firmware MeshCore (recette Heltec). Sans
+    // lecture valide, on n'écrit pas : écrire 0x01 seul écraserait les
+    // autres bits du registre.
     uint8_t value = 0;
-    _lora.readRegister(0x8B5, &value, 1);
-    value |= 0x01;
-    _lora.writeRegister(0x8B5, &value, 1);
+    if (_lora.readRegister(0x8B5, &value, 1) == RADIOLIB_ERR_NONE) {
+      value |= 0x01;
+      _lora.writeRegister(0x8B5, &value, 1);
+    } else {
+      Serial.println(F("Patch RX 0x8B5 non appliqué (lecture échouée)"));
+    }
   }
 
   _lora.setDio1Action(onDio1Isr);
   return startReceive();
 }
 
-bool Radio::waitChannelClear(uint32_t deadlineMs, uint32_t slotMinMs,
-                             uint32_t slotMaxMs) {
-  uint32_t start = millis();
-  for (;;) {
-    int16_t state = _lora.scanChannel();
-    if (state == RADIOLIB_CHANNEL_FREE) {
-      return true;  // l'appelant enchaîne sur transmit()
-    }
-    // Canal occupé — une erreur de scan est traitée pareil : on retente.
-    // Le CAD lève aussi DIO1 : on efface le drapeau avant de repartir.
-    s_packetFlag = false;
-    startReceive();
-    if (millis() - start >= deadlineMs) {
-      return false;
-    }
-    uint32_t slot = slotMinMs + sysRandom32() % (slotMaxMs - slotMinMs + 1);
-    delay(slot);  // slot court aléatoire, radio à l'écoute pendant ce temps
-  }
+bool Radio::channelClear() {
+  // Une erreur de scan est traitée comme un canal occupé.
+  int16_t state = _lora.scanChannel();
+  // Le CAD-done vient de lever DIO1 : l'effacer maintenant, puis
+  // repasser en écoute. Un RX-done ultérieur (paquet reçu pendant que
+  // l'appelant patiente) relèvera le drapeau et sera vu par
+  // packetAvailable() avant le cycle de CAD suivant.
+  s_packetFlag = false;
+  startReceive();
+  return state == RADIOLIB_CHANNEL_FREE;
 }
 
 int16_t Radio::transmit(const uint8_t *data, size_t len) {

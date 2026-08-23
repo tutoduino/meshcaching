@@ -145,16 +145,19 @@ void SettingsMenu::handleEditTarget(Action action) {
 }
 
 void SettingsMenu::handleEditTxPower(Action action) {
+  // Plage utile de la carte : sur les V4 à FEM, le plancher remonte du
+  // gain du PA pour que la valeur affichée reste la puissance réelle.
+  int8_t minDbm = _board.txPowerMinDbm();
   int8_t maxDbm = _board.txPowerMaxDbm();
   switch (action) {
     case Action::Up:
       _settings.txPowerDbm =
-          _settings.txPowerDbm >= maxDbm ? kTxPowerMinDbm
+          _settings.txPowerDbm >= maxDbm ? minDbm
                                          : (int8_t)(_settings.txPowerDbm + 1);
       break;
     case Action::Down:
       _settings.txPowerDbm =
-          _settings.txPowerDbm <= kTxPowerMinDbm
+          _settings.txPowerDbm <= minDbm
               ? maxDbm
               : (int8_t)(_settings.txPowerDbm - 1);
       break;
