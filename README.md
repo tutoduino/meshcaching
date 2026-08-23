@@ -1,9 +1,9 @@
 # meshcaching
 
 Géolocalisation d'un répéteur [MeshCore](https://github.com/meshcore-dev/MeshCore) :
-l'appareil affiche le RSSI (niveau de signal) et le temps écoulé depuis la
-dernière réception d'un paquet provenant d'un répéteur donné, et permet de le
-« pinger » avec un paquet TRACE (le ping natif de MeshCore) via le bouton.
+l'appareil affiche le RSSI (niveau de signal) des paquets provenant d'un
+répéteur donné, ainsi que le bruit de fond du canal, et permet de « pinger »
+le répéteur avec un paquet TRACE (le ping natif de MeshCore) via le bouton.
 
 Firmware compagnon de l'article
 [Géolocalisation d'un répéteur MeshCore](https://tutoduino.fr/menu-sdr/geolocalisation-repeteur-meshcore/)
@@ -53,9 +53,10 @@ des constantes indépendantes dans `src/AppConfig.h`).
 L'émission est précédée d'un LBT (écoute du canal par CAD) : essais espacés
 de slots aléatoires courts pendant 4 s au plus, puis abandon — pas de TX
 forcé. Le témoin en haut à droite suit la séquence : « LBT », puis « TX »,
-ou « OCCUPÉ » en cas d'abandon. Le bruit de fond (médiane de 64 lectures de
-RSSI instantané, évaluation continue et non intrusive) s'affiche en bas à
-gauche (« NF »), le SNR du dernier paquet en bas à droite.
+ou « OCCUPÉ » en cas d'abandon. Le bandeau du haut affiche le répéteur
+surveillé (« RPT ») et le bruit de fond (« NF », médiane de 64 lectures de
+RSSI instantané, évaluation continue et non intrusive) ; le SNR du dernier
+paquet est centré sous le RSSI.
 
 - **Ping TRACE** : appui court sur Ok (joystick sur le L1, bouton PRG sur les
   Heltec).
@@ -67,7 +68,7 @@ Trois réglages, persistés (NVS sur ESP32, LittleFS interne sur nRF52) :
 - **Puiss. TX** : puissance d'émission « à l'antenne », de −9 dBm au maximum
   de la carte ;
 - **Gain RX** : `AUCUN` / `RX BOOST` (le +2 dB interne du SX126x, défaut
-  partout) / `FEM LNA` (Heltec V4.3 uniquement, exclusif du boost). Attention :
+  partout) / `FEM LNA` (Heltec V4 uniquement, exclusif du boost). Attention :
   le LNA du FEM ajoute son gain au RSSI affiché.
 
 Navigation : sur le L1, Up/Down navigue ou modifie, Left/Right change de
@@ -82,7 +83,8 @@ les changements sont appliqués et sauvegardés à la fermeture.
 src/
 ├── main.cpp          point d'entrée (délègue à App)
 ├── AppConfig.h       config applicative : preset radio, défauts d'usine
-├── app/              logique applicative (App)
+├── app/              logique applicative : App, NoiseFloor (médiane du
+│                     bruit de fond)
 ├── mesh/             protocole MeshCore pur (parsing, TRACE) — aucune
 │                     dépendance matérielle
 ├── ui/               écrans U8g2 (pilote commun SH1106/SSD1306) :
@@ -91,7 +93,7 @@ src/
     ├── Board.h       interface d'une carte : écran, brochage radio,
     │                 boutons logiques, puissance TX défaut/max, FEM
     ├── Radio.*       enveloppe SX1262/RadioLib (FEM, ISR, puissance,
-    │                 gain RX)
+    │                 gain RX, LBT par CAD)
     ├── Buttons.*     boutons débouncés -> touches logiques (Ok, Back,
     │                 Up/Down/Left/Right), clic court / appui long
     ├── Settings.*    config persistée (NVS ESP32 / LittleFS nRF52)
