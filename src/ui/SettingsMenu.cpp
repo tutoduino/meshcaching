@@ -31,9 +31,16 @@ void SettingsMenu::open(const AppSettings &current) {
 
 SettingsMenu::Action SettingsMenu::translate(const ButtonEvent &event) const {
   if (!_hasDpad) {
-    // Bouton unique : clic = avancer/modifier, appui long = valider
+    // Bouton unique : appui long = valider ; clic court = item suivant en
+    // navigation, incrément en édition (digit hex, gain RX) — sauf la
+    // puissance, qui décrémente depuis son maximum (valeur de départ).
     if (event.key == Key::Ok) {
-      return event.longPress ? Action::Select : Action::Down;
+      if (event.longPress) {
+        return Action::Select;
+      }
+      return (_mode == Mode::EditTarget || _mode == Mode::EditRxGain)
+                 ? Action::Up
+                 : Action::Down;
     }
     return Action::None;
   }
@@ -291,7 +298,7 @@ void SettingsMenu::drawEditTarget() {
   }
   // Soulignement du digit en cours d'édition
   _d.drawBox(x0 + _digit * pitch, 49, pitch - 6, 2);
-  drawHint("OK: suivant/valider", "clic: -1  long: suiv.");
+  drawHint("OK: suivant/valider", "clic: +1  long: suiv.");
 }
 
 void SettingsMenu::drawEditTxPower() {
