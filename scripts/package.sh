@@ -24,20 +24,33 @@ BOOT_APP0=$(ls "$HOME"/.platformio/packages/framework-arduinoespressif32*/tools/
 [ -n "$BOOT_APP0" ] || { echo "boot_app0.bin introuvable" >&2; exit 1; }
 
 mkdir -p "$DIST"
+packaged=0
 
-for target in heltec_v3 heltec_v4_3 heltec_v4_r8; do
+# Cibles ESP32 : tout environnement compilé qui a produit un bootloader.
+# (`merge_bin` : alias accepté par esptool v4 — repli PlatformIO local —
+# comme v5, épinglée en CI, où le nom canonique est `merge-bin`.)
+for bootloader in "$BUILD"/*/bootloader.bin; do
+  [ -e "$bootloader" ] || continue
+  target=$(basename "$(dirname "$bootloader")")
   esptool --chip esp32s3 merge_bin \
     -o "$DIST/meshcaching-$target-$VERSION.bin" \
-    0x0 "$BUILD/$target/bootloader.bin" \
+    0x0 "$bootloader" \
     0x8000 "$BUILD/$target/partitions.bin" \
     0xe000 "$BOOT_APP0" \
     0x10000 "$BUILD/$target/firmware.bin"
+  packaged=$((packaged + 1))
 done
 
-python3 scripts/hex2uf2.py \
-  "$BUILD/wio_tracker_l1/firmware.hex" \
-  "$DIST/meshcaching-wio_tracker_l1-$VERSION.uf2" \
-  0xADA52840
+# Cibles nRF52 : tout environnement qui a produit un firmware.hex
+for hex in "$BUILD"/*/firmware.hex; do
+  [ -e "$hex" ] || continue
+  target=$(basename "$(dirname "$hex")")
+  python3 scripts/hex2uf2.py "$hex" \
+    "$DIST/meshcaching-$target-$VERSION.uf2" \
+    0xADA52840
+  packaged=$((packaged + 1))
+done
 
+[ "$packaged" -gt 0 ] || { echo "aucune cible compilée dans $BUILD" >&2; exit 1; }
 (cd "$DIST" && sha256sum meshcaching-*-"$VERSION".* > SHA256SUMS)
 ls -l "$DIST"

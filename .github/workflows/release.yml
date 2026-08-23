@@ -27,7 +27,9 @@ jobs:
           key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
 
       - name: Installe PlatformIO et esptool
-        run: pip install platformio esptool
+        # Versions épinglées : rejouer un vieux tag doit reconstruire avec
+        # la même chaîne d'outils que la release d'origine.
+        run: pip install platformio==6.1.19 esptool==5.2.0
 
       - name: Compile toutes les cibles
         run: pio run
@@ -44,8 +46,7 @@ jobs:
 
             ### Le plus simple : le flasher web MeshCore
 
-            1. Ouvrir [flasher.meshcore.io](https://flasher.meshcore.io)
-               (Chrome ou Edge, la carte branchée en USB) ;
+            1. Ouvrir [flasher.meshcore.io](https://flasher.meshcore.io) ;
             2. choisir **« Custom Firmware »**, tout en bas de la liste des
                modèles de cartes ;
             3. sélectionner le fichier correspondant à votre carte
@@ -53,14 +54,14 @@ jobs:
 
             | Carte | Fichier |
             |---|---|
+            | Seeed Wio Tracker L1 Pro | `meshcaching-wio_tracker_l1-${{ github.ref_name }}.uf2` |
             | Heltec WiFi LoRa 32 V3 | `meshcaching-heltec_v3-${{ github.ref_name }}.bin` |
             | Heltec WiFi LoRa 32 V4.3 | `meshcaching-heltec_v4_3-${{ github.ref_name }}.bin` |
             | Heltec WiFi LoRa 32 V4 R8 | `meshcaching-heltec_v4_r8-${{ github.ref_name }}.bin` |
-            | Seeed Wio Tracker L1 Pro | `meshcaching-wio_tracker_l1-${{ github.ref_name }}.uf2` |
 
             ### Alternatives en ligne de commande
 
-            - **Heltec (ESP32)** : image complète à flasher à l'adresse 0 —
-              `esptool --chip esp32s3 write_flash 0x0 meshcaching-<carte>-${{ github.ref_name }}.bin`
             - **Wio Tracker L1 (nRF52)** : double appui sur RESET (un disque
               USB apparaît), puis glisser-déposer le fichier `.uf2` dessus.
+            - **Heltec (ESP32)** : image complète à flasher à l'adresse 0 —
+              `esptool --chip esp32s3 write_flash 0x0 meshcaching-<carte>-${{ github.ref_name }}.bin`
