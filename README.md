@@ -1,4 +1,4 @@
-# meshcaching
+# MeshCaching Firmware
 
 Géolocalisation d'un répéteur [MeshCore](https://github.com/meshcore-dev/MeshCore) :
 l'appareil affiche le RSSI (niveau de signal) des paquets provenant d'un
