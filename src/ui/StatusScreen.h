@@ -8,7 +8,7 @@
 struct MainView {
   const uint8_t *pubkeyPrefix;   // répéteur surveillé (bandeau)
   size_t prefixLen;
-  bool rssiValid;                // false : logo de scan à la place du RSSI
+  bool rssiValid;                // false : logo de sommeil à la place du RSSI
   float rssi;
   float snr;
   bool noiseValid;               // bruit de fond mesuré (médiane) dispo ?
@@ -32,11 +32,11 @@ public:
   void showSplash(const char *version);
 
   // Écran principal : RSSI en grand tant qu'il est frais, sinon logo de
-  // scan animé ; témoin TX, barre de réarmement de l'émission, flash.
+  // sommeil (zZZ) ; témoin TX, barre de réarmement de l'émission, flash.
   void drawMain(const MainView &view);
 
 private:
-  void drawScanLogo();
+  void drawSleepLogo();
 
   U8G2 &_d;
 };

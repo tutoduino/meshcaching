@@ -25,16 +25,19 @@ void StatusScreen::showSplash(const char *version) {
   _d.sendBuffer();
 }
 
-void StatusScreen::drawScanLogo() {
-  // Ondes concentriques émises par un point : le scan est en cours.
-  // La phase avance avec le temps pour animer la propagation.
-  const u8g2_uint_t cx = _d.getDisplayWidth() / 2;
-  const u8g2_uint_t cy = 47;
-  uint8_t phase = (millis() / 350) % 3;
-  _d.drawDisc(cx, cy, 3);
-  for (uint8_t i = 0; i <= phase; i++) {
-    _d.drawCircle(cx, cy, 10 + i * 8,
-                  U8G2_DRAW_UPPER_LEFT | U8G2_DRAW_UPPER_RIGHT);
+void StatusScreen::drawSleepLogo() {
+  // "zZZ" façon émoji sommeil : trois Z croissants en diagonale montante,
+  // révélés un à un au rythme d'une respiration.
+  uint8_t phase = (millis() / 600) % 3;
+  _d.setFont(u8g2_font_6x12_tf);
+  _d.drawUTF8(42, 54, "z");
+  if (phase >= 1) {
+    _d.setFont(u8g2_font_helvB12_tr);
+    _d.drawUTF8(54, 46, "Z");
+  }
+  if (phase >= 2) {
+    _d.setFont(u8g2_font_logisoso24_tr);
+    _d.drawUTF8(70, 40, "Z");
   }
 }
 
@@ -77,7 +80,7 @@ void StatusScreen::drawMain(const MainView &v) {
     _d.setFont(u8g2_font_6x12_tf);
     _d.drawUTF8(x + w + 3, 44, "dBm");
   } else {
-    drawScanLogo();
+    drawSleepLogo();
   }
 
   // --- SNR du dernier paquet, centré sous le RSSI ---

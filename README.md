@@ -53,7 +53,7 @@ mais seulement comme valeur d'usine, modifiable ensuite via le menu.
 ## Utilisation
 
 Écran principal : RSSI du répéteur cible en grand (avec SNR) tant qu'un
-paquet a été reçu il y a moins de 5 s ; au-delà, un logo de scan animé
+paquet a été reçu il y a moins de 5 s ; au-delà, un logo de sommeil (zZZ)
 reprend la place. L'écran clignote (inversion) quand une réponse valide
 rafraîchit le RSSI, et une barre décroissante en bas indique le réarmement
 de l'émission (au plus un ping toutes les 5 s — les deux durées de 5 s sont

@@ -91,7 +91,7 @@ void App::setup() {
   Serial.println(F("En attente de paquets MeshCore..."));
   // Laisse l'écran de démarrage visible le temps voulu — l'init de la
   // radio et de la config a tourné pendant ce temps — puis écran
-  // principal directement (logo de scan).
+  // principal directement (logo de sommeil).
   while (millis() - splashStartMs < config::kSplashMs) {
     delay(10);
   }
