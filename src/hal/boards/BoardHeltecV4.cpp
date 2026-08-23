@@ -1,15 +1,20 @@
-#ifdef BOARD_HELTEC_V4
+#if defined(BOARD_HELTEC_V4) || defined(BOARD_HELTEC_V4_R8)
 // =====================================================================
-// Heltec WiFi LoRa 32 V4, révision 4.3 — ESP32-S3R2 + SX1262, OLED
-// SSD1306 128x64 (I2C), un seul bouton utilisateur (PRG).
+// Heltec WiFi LoRa 32 V4 — deux déclinaisons partagent cette carte :
+//  - BOARD_HELTEC_V4 : révision 4.3 (ESP32-S3R2, 2 Mo PSRAM) ;
+//  - BOARD_HELTEC_V4_R8 : série "R8" (ESP32-S3R8, 8 Mo PSRAM), vendue
+//    ensuite, qui ne diffère ici que par son rail Vext (GPIO40, actif
+//    à l'état BAS, contre GPIO36 actif HAUT sur la 4.3).
 //
-// Brochage LoRa et OLED identique au V3, mais : Vext actif à l'état
-// HAUT, et un FEM (front-end module) KCT8103L entre le SX1262 et
-// l'antenne, qui ajoute ~12 dB en émission. Valeurs reprises du firmware
-// MeshCore (variants/heltec_v4).
+// Commun aux deux : SX1262 (brochage LoRa et OLED identique au V3),
+// OLED 128x64 piloté en SSD1306, un seul bouton utilisateur (PRG), et
+// un FEM (front-end module) KCT8103L entre le SX1262 et l'antenne, qui
+// ajoute ~12 dB en émission et offre un LNA débrayable en réception.
+// Valeurs reprises du firmware MeshCore (variants/heltec_v4{,_r8}).
 //
-// Note : la révision 4.2 embarque un autre FEM (GC1109, pilotage
-// différent) et n'est pas gérée ici.
+// Note : les V4 antérieurs au 4.3 embarquent un autre FEM (GC1109,
+// pilotage différent) et ne sont pas gérés ici. Les déclinaisons TFT et
+// e-ink ne sont pas gérées non plus.
 // =====================================================================
 #include "../Board.h"
 
@@ -35,8 +40,17 @@ constexpr int8_t kFemTxGainDb = 12;
 constexpr uint8_t kPinOledSda = 17;
 constexpr uint8_t kPinOledScl = 18;
 constexpr uint8_t kPinOledReset = 21;
-constexpr uint8_t kPinVext = 36;      // actif à l'état HAUT sur le V4
 constexpr uint8_t kPinButtonPrg = 0;  // relié à la masse quand pressé
+
+#ifdef BOARD_HELTEC_V4_R8
+constexpr char kBoardName[] = "Heltec WiFi LoRa 32 V4 R8";
+constexpr uint8_t kPinVext = 40;
+constexpr uint8_t kVextOnLevel = LOW;
+#else
+constexpr char kBoardName[] = "Heltec WiFi LoRa 32 V4.3";
+constexpr uint8_t kPinVext = 36;
+constexpr uint8_t kVextOnLevel = HIGH;
+#endif
 
 const ButtonSpec kButtons[] = {
     {Key::Ok, kPinButtonPrg, /*activeLow=*/true, /*internalPullup=*/true},
@@ -44,16 +58,16 @@ const ButtonSpec kButtons[] = {
 
 class HeltecV4Board : public Board {
 public:
-  const char *name() const override { return "Heltec WiFi LoRa 32 V4.3"; }
+  const char *name() const override { return kBoardName; }
 
   void initPower() override {
     pinMode(kPinVext, OUTPUT);
-    digitalWrite(kPinVext, HIGH);  // allume le rail Vext (OLED)
+    digitalWrite(kPinVext, kVextOnLevel);  // allume le rail Vext (OLED)
 
     // Alimente puis configure le FEM. CSD haut = FEM actif ; CTX haut au
-    // depart = PA dans le chemin d'émission, LNA contourné en réception.
+    // départ = PA dans le chemin d'émission, LNA contourné en réception.
     // L'aiguillage RX est ensuite géré par radioRxMode() selon setFemLna().
-    // Attention si le LNA est activé : son gain s'ajoute au RSSI mesure
+    // Attention si le LNA est activé : son gain s'ajoute au RSSI mesuré
     // par le SX1262, précisément la donnée que cet appareil affiche.
     pinMode(kPinFemLdo, OUTPUT);
     digitalWrite(kPinFemLdo, HIGH);
@@ -80,12 +94,12 @@ public:
 
   void beginDisplay() override {
     _display.begin();
-    // Le panneau du V4 est un SSD1315 (clone du SSD1306, que l'init U8g2
-    // pilote très bien par ailleurs) : au reset il utilise sa référence
-    // de courant externe et reste à mi-luminosité. La commande 0xAD le
-    // bascule sur l'IREF interne en courant maximal — le correctif connu
-    // pour ces panneaux. Appliqué écran éteint, comme l'exige le
-    // datasheet, puis contraste au maximum.
+    // Les panneaux OLED de la série V4 sont des clones du SSD1306 (type
+    // SSD1315) : au reset ils utilisent leur référence de courant externe
+    // et restent à mi-luminosité. La commande 0xAD les bascule sur l'IREF
+    // interne en courant maximal — le correctif connu pour ces panneaux.
+    // Appliqué écran éteint, comme l'exige le datasheet, puis contraste
+    // au maximum.
     _display.setPowerSave(1);
     _display.sendF("ca", 0x0ad, 0x030);  // IREF interne, courant maxi
     _display.setPowerSave(0);
@@ -108,6 +122,8 @@ public:
     return t;
   }
 
+  // Même FEM et même chaîne RF que la 4.3 : même plafond de 20 dBm à
+  // l'antenne pour la série R8 (à ajuster si son PA est qualifié plus haut).
   int8_t txPowerMaxDbm() const override { return 20; }
 
   const ButtonSpec *buttons(size_t &count) const override {
@@ -127,4 +143,4 @@ Board &board() {
   static HeltecV4Board instance;
   return instance;
 }
-#endif  // BOARD_HELTEC_V4
+#endif  // BOARD_HELTEC_V4 || BOARD_HELTEC_V4_R8

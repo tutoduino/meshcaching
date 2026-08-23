@@ -10,15 +10,17 @@ restructuré en projet PlatformIO multi-cartes.
 
 ## Cartes supportées
 
-| Environnement    | Carte                        | MCU        | Radio            | Écran          | Boutons          | TX défaut / max |
-|------------------|------------------------------|------------|------------------|----------------|------------------|-----------------|
-| `wio_tracker_l1` | Seeed Wio Tracker L1 Pro     | nRF52840   | SX1262           | SH1106 128×64  | croix + 2 boutons| 22 / 22 dBm     |
-| `heltec_v3`      | Heltec WiFi LoRa 32 V3       | ESP32-S3   | SX1262           | SSD1306 128×64 | 1 bouton (PRG)   | 22 / 22 dBm     |
-| `heltec_v4`      | Heltec WiFi LoRa 32 V4 (4.3) | ESP32-S3R2 | SX1262 + FEM     | SSD1306 128×64 | 1 bouton (PRG)   | 20 / 20 dBm     |
+| Environnement    | Carte                          | MCU        | Radio            | Écran          | Boutons          | TX défaut / max |
+|------------------|--------------------------------|------------|------------------|----------------|------------------|-----------------|
+| `wio_tracker_l1` | Seeed Wio Tracker L1 Pro       | nRF52840   | SX1262           | SH1106 128×64  | croix + 2 boutons| 22 / 22 dBm     |
+| `heltec_v3`      | Heltec WiFi LoRa 32 V3         | ESP32-S3   | SX1262           | SSD1306 128×64 | 1 bouton (PRG)   | 22 / 22 dBm     |
+| `heltec_v4`      | Heltec WiFi LoRa 32 V4 (4.3)   | ESP32-S3R2 | SX1262 + FEM     | SSD1306 128×64 | 1 bouton (PRG)   | 20 / 20 dBm     |
+| `heltec_v4_r8`   | Heltec WiFi LoRa 32 V4 « R8 »  | ESP32-S3R8 | SX1262 + FEM     | SSD1306 128×64 | 1 bouton (PRG)   | 20 / 20 dBm     |
 
-Sur le V4.3, la puissance est exprimée « à l'antenne » : le FEM KCT8103L
-ajoute ~12 dB en émission, retranchés automatiquement de la consigne passée
-au SX1262. La révision 4.2 (FEM GC1109) n'est pas gérée.
+Sur les V4 (4.3 et R8), la puissance est exprimée « à l'antenne » : le FEM
+KCT8103L ajoute ~12 dB en émission, retranchés automatiquement de la consigne
+passée au SX1262. Non gérés : les V4 antérieurs à la 4.3 (FEM GC1109) et les
+déclinaisons TFT / e-ink.
 
 ## Compilation
 
