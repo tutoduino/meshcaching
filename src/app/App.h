@@ -49,8 +49,12 @@ private:
   AppSettings _settings{};
   RepeaterStatus _target;
   // Tag de la dernière requête TRACE envoyée, et instant d'envoi :
-  // permet de reconnaître la réponse (qui renvoie ce même tag).
+  // permet de reconnaître la réponse (qui renvoie ce même tag), et
+  // sert d'ancre au réarmement de l'émission (kTxCooldownMs).
   uint32_t _lastSentTag = 0;
   uint32_t _lastPingMs = 0;
+  bool _hasPinged = false;
+  // Départ du clignotement declenché par une réponse valide
+  uint32_t _rxFlashStartMs = 0;
   uint32_t _lastDisplayRefreshMs = 0;
 };

@@ -51,7 +51,6 @@ void App::setup() {
 
   _board.initPower();
   _board.beginDisplay();
-  _screen.showMessage("Initialisation...");
 
   // Carte inattendue (p. ex. Heltec V4.2 flashé avec le build V4.3) :
   // on s'arrête avant de toucher à la radio.
@@ -87,7 +86,7 @@ void App::setup() {
                 (unsigned)_settings.rxGainMode);
 
   Serial.println(F("En attente de paquets MeshCore..."));
-  _screen.showMessage("En attente de", "paquets MeshCore...");
+  refreshDisplay();  // écran principal directement (logo de scan)
 }
 
 void App::loop() {
@@ -105,8 +104,8 @@ void App::loop() {
     applyMenuResult();
   }
 
-  // Rafraîchit l'écran principal une fois par seconde (compteur "temps
-  // écoulé") — jamais par-dessus le menu
+  // Rafraîchit l'écran principal (animations, barre de réarmement,
+  // péremption du RSSI) — jamais par-dessus le menu
   if (!_menu.isOpen() &&
       millis() - _lastDisplayRefreshMs >= config::kDisplayRefreshMs) {
     _lastDisplayRefreshMs = millis();
@@ -155,23 +154,44 @@ void App::applyMenuResult() {
 }
 
 void App::refreshDisplay() {
-  if (!_target.hasPacket) {
-    _screen.showMessage("En attente de", "paquets MeshCore...");
-    return;
-  }
-  uint32_t ageSeconds = (millis() - _target.lastSeenMs) / 1000;
-  _screen.drawStatus(_target.rssi, _target.snr, ageSeconds,
-                     _settings.targetPrefix, sizeof(_settings.targetPrefix));
+  uint32_t now = millis();
+  MainView view;
+  view.pubkeyPrefix = _settings.targetPrefix;
+  view.prefixLen = sizeof(_settings.targetPrefix);
+  view.rssiValid = _target.hasPacket &&
+                   now - _target.lastSeenMs < config::kRssiFreshnessMs;
+  view.rssi = _target.rssi;
+  view.snr = _target.snr;
+  view.txActive = _hasPinged && now - _lastPingMs < config::kTxIndicatorMs;
+  view.invert = _target.hasPacket &&
+                now - _rxFlashStartMs < config::kRxFlashMs &&
+                ((now - _rxFlashStartMs) / config::kRxFlashHalfPeriodMs) % 2 ==
+                    0;
+  uint32_t sincePing = now - _lastPingMs;
+  view.cooldownTotalMs = config::kTxCooldownMs;
+  view.cooldownRemainingMs = (_hasPinged && sincePing < config::kTxCooldownMs)
+                                 ? config::kTxCooldownMs - sincePing
+                                 : 0;
+  _screen.drawMain(view);
 }
 
 void App::sendTracePing() {
+  uint32_t now = millis();
+  if (_hasPinged && now - _lastPingMs < config::kTxCooldownMs) {
+    return;  // réarmement en cours : pas plus d'une émission par période
+  }
+
   uint8_t buf[meshcore::kTracePingLen];
   uint32_t tag = sysRandom32();  // identifiant aléatoire de cette requête
   size_t len =
       meshcore::buildTracePing(buf, tag, _settings.targetPrefix[0]);
 
   _lastSentTag = tag;  // on retiendra ce tag pour reconnaître la réponse
-  _lastPingMs = millis();
+  _lastPingMs = now;
+  _hasPinged = true;
+  if (!_menu.isOpen()) {
+    refreshDisplay();  // témoin TX et barre pleine, avant l'émission bloquante
+  }
 
   Serial.printf("Envoi TRACE (tag=%08lX) vers RÉPÉTEUR %02X...\n",
                 (unsigned long)tag, _settings.targetPrefix[0]);
@@ -245,6 +265,7 @@ void App::handleIncomingPacket() {
     _target.lastSeenMs = millis();
     _target.rssi = rssi;
     _target.snr = snr;
+    _rxFlashStartMs = _target.lastSeenMs;  // déclenche le clignotement
     if (!_menu.isOpen()) {
       refreshDisplay();  // mise à jour immédiate de l'écran
     }

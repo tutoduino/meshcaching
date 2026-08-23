@@ -12,33 +12,67 @@ void StatusScreen::showMessage(const char *line1, const char *line2) {
   _d.sendBuffer();
 }
 
-void StatusScreen::drawStatus(float rssi, float snr, uint32_t ageSeconds,
-                              const uint8_t *pubkeyPrefix, size_t prefixLen) {
+void StatusScreen::drawScanLogo() {
+  // Ondes concentriques émises par un point : le scan est en cours.
+  // La phase avance avec le temps pour animer la propagation.
+  const u8g2_uint_t cx = _d.getDisplayWidth() / 2;
+  const u8g2_uint_t cy = 47;
+  uint8_t phase = (millis() / 350) % 3;
+  _d.drawDisc(cx, cy, 3);
+  for (uint8_t i = 0; i <= phase; i++) {
+    _d.drawCircle(cx, cy, 10 + i * 8,
+                  U8G2_DRAW_UPPER_LEFT | U8G2_DRAW_UPPER_RIGHT);
+  }
+}
+
+void StatusScreen::drawMain(const MainView &v) {
   _d.clearBuffer();
   char buf[24];
 
-  // --- Titre : identifiant du répéteur surveillé ---
+  // --- Bandeau : répéteur surveillé + témoin d'émission ---
   _d.setFont(u8g2_font_6x12_tf);
-  snprintf(buf, sizeof(buf), "RÉPÉTEUR %02X%02X", pubkeyPrefix[0],
-           prefixLen >= 2 ? pubkeyPrefix[1] : 0);
+  snprintf(buf, sizeof(buf), "RÉPÉTEUR %02X%02X", v.pubkeyPrefix[0],
+           v.prefixLen >= 2 ? v.pubkeyPrefix[1] : 0);
   _d.drawUTF8(0, 10, buf);
+  if (v.txActive) {
+    _d.drawBox(110, 0, 18, 12);
+    _d.setDrawColor(0);
+    _d.drawUTF8(113, 10, "TX");
+    _d.setDrawColor(1);
+  }
+  _d.drawHLine(0, 13, _d.getDisplayWidth());
 
-  // --- RSSI en grand, centré horizontalement ---
-  _d.setFont(u8g2_font_logisoso24_tr);
-  snprintf(buf, sizeof(buf), "%d", (int)lroundf(rssi));
-  u8g2_uint_t w = _d.getUTF8Width(buf);
-  u8g2_uint_t x = (_d.getDisplayWidth() - w) / 2;
-  _d.drawUTF8(x, 48, buf);
-  _d.setFont(u8g2_font_6x12_tf);
-  _d.drawUTF8(x + w + 3, 48, "dBm");
+  if (v.rssiValid) {
+    // --- RSSI en grand, centré, avec le SNR en dessous ---
+    _d.setFont(u8g2_font_logisoso24_tr);
+    snprintf(buf, sizeof(buf), "%d", (int)lroundf(v.rssi));
+    u8g2_uint_t w = _d.getUTF8Width(buf);
+    u8g2_uint_t x = (_d.getDisplayWidth() - w) / 2;
+    _d.drawUTF8(x, 44, buf);
+    _d.setFont(u8g2_font_6x12_tf);
+    _d.drawUTF8(x + w + 3, 44, "dBm");
+    int snr10 = (int)lroundf(v.snr * 10.0f);
+    snprintf(buf, sizeof(buf), "SNR %s%d.%c dB", snr10 < 0 ? "-" : "",
+             abs(snr10) / 10, (char)('0' + abs(snr10) % 10));
+    _d.drawUTF8((_d.getDisplayWidth() - _d.getUTF8Width(buf)) / 2, 58, buf);
+  } else {
+    drawScanLogo();
+  }
 
-  // --- SNR et temps écoulé depuis le dernier paquet ---
-  int snr10 = (int)lroundf(snr * 10.0f);
-  snprintf(buf, sizeof(buf), "SNR:%s%d.%cdB", snr10 < 0 ? "-" : "",
-           abs(snr10) / 10, (char)('0' + abs(snr10) % 10));
-  _d.drawUTF8(0, 63, buf);
-  snprintf(buf, sizeof(buf), "%lus", (unsigned long)ageSeconds);
-  _d.drawUTF8(_d.getDisplayWidth() - _d.getUTF8Width(buf), 63, buf);
+  // --- Barre décroissante : temps avant la prochaine émission possible ---
+  if (v.cooldownRemainingMs > 0 && v.cooldownTotalMs > 0) {
+    u8g2_uint_t barWidth = (u8g2_uint_t)((uint32_t)_d.getDisplayWidth() *
+                                         v.cooldownRemainingMs /
+                                         v.cooldownTotalMs);
+    _d.drawBox(0, 61, barWidth, 3);
+  }
+
+  // --- Réponse valide reçue : clignotement par inversion de la trame ---
+  if (v.invert) {
+    _d.setDrawColor(2);  // XOR
+    _d.drawBox(0, 0, _d.getDisplayWidth(), _d.getDisplayHeight());
+    _d.setDrawColor(1);
+  }
 
   _d.sendBuffer();
 }

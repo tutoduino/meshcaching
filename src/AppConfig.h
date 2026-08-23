@@ -22,7 +22,23 @@ constexpr uint8_t kTargetPubkeyPrefix[] = { 0x57, 0xDB };
 // On n'accepte une réponse TRACE que dans les 10 s suivant notre ping
 constexpr uint32_t kTraceReplyTimeoutMs = 10000;
 
-// Rafraîchissement périodique de l'écran (compteur "temps écoulé")
-constexpr uint32_t kDisplayRefreshMs = 1000;
+// Fraîcheur du RSSI affiché : sans nouveau paquet du répéteur au-delà
+// de ce délai, l'écran principal retourne au logo de scan.
+constexpr uint32_t kRssiFreshnessMs = 5000;
+
+// Délai minimal entre deux émissions TRACE. Volontairement distinct de
+// kRssiFreshnessMs : les deux durées se règlent indépendamment.
+constexpr uint32_t kTxCooldownMs = 5000;
+
+// Durée d'affichage du témoin d'émission "TX"
+constexpr uint32_t kTxIndicatorMs = 700;
+
+// Clignotement par inversion de l'écran quand une réponse valide vient
+// de rafraîchir le RSSI : durée totale et demi-période.
+constexpr uint32_t kRxFlashMs = 450;
+constexpr uint32_t kRxFlashHalfPeriodMs = 150;
+
+// Cadence de rafraîchissement de l'écran principal (animations, barre)
+constexpr uint32_t kDisplayRefreshMs = 100;
 
 }  // namespace config

@@ -62,8 +62,12 @@ public:
   // Écran U8g2 de la carte, construit mais pas initialisé.
   virtual U8G2 &display() = 0;
   // Démarre l'écran ; à surcharger si l'init sort de l'ordinaire
-  // (sondage d'adresse I2C, etc.)
-  virtual void beginDisplay() { display().begin(); }
+  // (sondage d'adresse I2C, etc.). I2C à 400 kHz : une trame complète
+  // passe en ~25 ms, nécessaire aux animations de l'écran principal.
+  virtual void beginDisplay() {
+    display().setBusClock(400000);
+    display().begin();
+  }
 
   virtual RadioTraits radio() const = 0;
 

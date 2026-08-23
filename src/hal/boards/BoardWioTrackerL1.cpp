@@ -43,6 +43,7 @@ public:
       addr = 0x3C;
     }
     _display.setI2CAddress(addr << 1);  // U8g2 attend l'adresse 8 bits
+    _display.setBusClock(400000);
     _display.begin();
   }
 

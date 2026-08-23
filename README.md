@@ -41,7 +41,13 @@ mais seulement comme valeur d'usine, modifiable ensuite via le menu.
 
 ## Utilisation
 
-Écran principal : RSSI du répéteur cible, SNR et ancienneté du dernier paquet.
+Écran principal : RSSI du répéteur cible en grand (avec SNR) tant qu'un
+paquet a été reçu il y a moins de 5 s ; au-delà, un logo de scan animé
+reprend la place. Un témoin « TX » s'affiche à l'émission, l'écran clignote
+(inversion) quand une réponse valide rafraîchit le RSSI, et une barre
+décroissante en bas indique le réarmement de l'émission (au plus un ping
+toutes les 5 s — les deux durées de 5 s sont des constantes indépendantes
+dans `src/AppConfig.h`).
 
 - **Ping TRACE** : appui court sur Ok (joystick sur le L1, bouton PRG sur les
   Heltec).

@@ -114,6 +114,7 @@ public:
   U8G2 &display() override { return _display; }
 
   void beginDisplay() override {
+    _display.setBusClock(400000);
     _display.begin();
     _display.setContrast(255);
   }
