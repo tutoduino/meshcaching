@@ -27,17 +27,24 @@ mkdir -p "$DIST"
 packaged=0
 
 # Cibles ESP32 : tout environnement compilé qui a produit un bootloader.
+# Deux fichiers par carte, aux suffixes que flasher.meshcore.io interprète :
+#  - "-merged.bin"  : image complète, flashée à 0x0 avec effacement —
+#    première installation ou récupération ;
+#  - "-update.bin"  : application seule, flashée à 0x10000 — mise à jour
+#    qui conserve la configuration persistée.
 # (`merge_bin` : alias accepté par esptool v4 — repli PlatformIO local —
 # comme v5, épinglée en CI, où le nom canonique est `merge-bin`.)
 for bootloader in "$BUILD"/*/bootloader.bin; do
   [ -e "$bootloader" ] || continue
   target=$(basename "$(dirname "$bootloader")")
   esptool --chip esp32s3 merge_bin \
-    -o "$DIST/meshcaching-$target-$VERSION.bin" \
+    -o "$DIST/meshcaching-$target-$VERSION-merged.bin" \
     0x0 "$bootloader" \
     0x8000 "$BUILD/$target/partitions.bin" \
     0xe000 "$BOOT_APP0" \
     0x10000 "$BUILD/$target/firmware.bin"
+  cp "$BUILD/$target/firmware.bin" \
+    "$DIST/meshcaching-$target-$VERSION-update.bin"
   packaged=$((packaged + 1))
 done
 
@@ -56,5 +63,5 @@ for hex in "$BUILD"/*/firmware.hex; do
 done
 
 [ "$packaged" -gt 0 ] || { echo "aucune cible compilée dans $BUILD" >&2; exit 1; }
-(cd "$DIST" && sha256sum meshcaching-*-"$VERSION".* > SHA256SUMS)
+(cd "$DIST" && sha256sum meshcaching-* > SHA256SUMS)
 ls -l "$DIST"

@@ -55,9 +55,15 @@ jobs:
             | Carte | Fichier |
             |---|---|
             | Seeed Wio Tracker L1 Pro | `meshcaching-wio_tracker_l1-${{ github.ref_name }}.zip` |
-            | Heltec WiFi LoRa 32 V3 | `meshcaching-heltec_v3-${{ github.ref_name }}.bin` |
-            | Heltec WiFi LoRa 32 V4.3 | `meshcaching-heltec_v4_3-${{ github.ref_name }}.bin` |
-            | Heltec WiFi LoRa 32 V4 R8 | `meshcaching-heltec_v4_r8-${{ github.ref_name }}.bin` |
+            | Heltec WiFi LoRa 32 V3 | `meshcaching-heltec_v3-${{ github.ref_name }}-merged.bin` |
+            | Heltec WiFi LoRa 32 V4.3 | `meshcaching-heltec_v4_3-${{ github.ref_name }}-merged.bin` |
+            | Heltec WiFi LoRa 32 V4 R8 | `meshcaching-heltec_v4_r8-${{ github.ref_name }}-merged.bin` |
+
+            Sur les Heltec, le suffixe `-merged.bin` compte : c'est lui qui
+            fait flasher l'image complète à l'adresse 0 (avec effacement).
+            Pour **mettre à jour** un appareil déjà flashé sans perdre sa
+            configuration, utiliser à la place `meshcaching-<carte>-${{ github.ref_name }}-update.bin`
+            (application seule, écrite à 0x10000).
 
             ### Alternatives en ligne de commande
 
@@ -65,5 +71,6 @@ jobs:
               USB apparaît), puis glisser-déposer
               `meshcaching-wio_tracker_l1-${{ github.ref_name }}.uf2` dessus.
               Ou en DFU série : `adafruit-nrfutil dfu serial --package <fichier>.zip -p <port> -b 115200 --singlebank --touch 1200`
-            - **Heltec (ESP32)** : image complète à flasher à l'adresse 0 —
-              `esptool --chip esp32s3 write_flash 0x0 meshcaching-<carte>-${{ github.ref_name }}.bin`
+            - **Heltec (ESP32)** : première installation
+              `esptool --chip esp32s3 write_flash 0x0 meshcaching-<carte>-${{ github.ref_name }}-merged.bin`,
+              mise à jour `esptool --chip esp32s3 write_flash 0x10000 meshcaching-<carte>-${{ github.ref_name }}-update.bin`
