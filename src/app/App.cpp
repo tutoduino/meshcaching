@@ -163,10 +163,7 @@ void App::refreshDisplay() {
   view.rssi = _target.rssi;
   view.snr = _target.snr;
   view.txActive = _hasPinged && now - _lastPingMs < config::kTxIndicatorMs;
-  view.invert = _target.hasPacket &&
-                now - _rxFlashStartMs < config::kRxFlashMs &&
-                ((now - _rxFlashStartMs) / config::kRxFlashHalfPeriodMs) % 2 ==
-                    0;
+  view.invert = _target.hasPacket && now - _rxFlashStartMs < config::kRxFlashMs;
   uint32_t sincePing = now - _lastPingMs;
   view.cooldownTotalMs = config::kTxCooldownMs;
   view.cooldownRemainingMs = (_hasPinged && sincePing < config::kTxCooldownMs)

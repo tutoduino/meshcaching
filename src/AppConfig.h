@@ -33,10 +33,9 @@ constexpr uint32_t kTxCooldownMs = 5000;
 // Durée d'affichage du témoin d'émission "TX"
 constexpr uint32_t kTxIndicatorMs = 700;
 
-// Clignotement par inversion de l'écran quand une réponse valide vient
-// de rafraîchir le RSSI : durée totale et demi-période.
-constexpr uint32_t kRxFlashMs = 450;
-constexpr uint32_t kRxFlashHalfPeriodMs = 150;
+// Clignotement quand une réponse valide vient de rafraîchir le RSSI :
+// une seule inversion de l'écran, de cette durée.
+constexpr uint32_t kRxFlashMs = 150;
 
 // Cadence de rafraîchissement de l'écran principal (animations, barre)
 constexpr uint32_t kDisplayRefreshMs = 100;
