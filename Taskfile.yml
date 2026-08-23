@@ -1,6 +1,12 @@
-# Usage : `task build`, `task upload`, `task flash` (upload + moniteur série).
-# Port série auto-détecté par PlatformIO ; forcer avec `task upload PORT=/dev/ttyACM0`.
-# Si l'upload echoue : double-appui sur RESET = mode bootloader (port DFU), puis relancer.
+# Usage :
+#   task build                     -> compile toutes les cartes
+#   task build TARGET=heltec_v3    -> compile une seule carte
+#   task upload TARGET=heltec_v3   -> téléverse (défaut : wio_tracker_l1)
+#   task flash TARGET=...          -> téléverse puis ouvre le moniteur série
+# Cibles : wio_tracker_l1, heltec_v3, heltec_v4.
+# Port série auto-détecté par PlatformIO ; forcer avec PORT=/dev/ttyACM0.
+# Si l'upload échoue sur le Wio Tracker : double-appui sur RESET = mode
+# bootloader (port DFU), puis relancer.
 version: '3'
 
 tasks:
@@ -10,14 +16,16 @@ tasks:
       - task --list
 
   build:
-    desc: Compile le firmware
+    desc: Compile le firmware (toutes les cartes, ou TARGET=...)
     cmds:
-      - pio run
+      - pio run {{if .TARGET}}-e {{.TARGET}}{{end}}
 
   upload:
-    desc: Compile et téléverse vers le Wio Tracker L1
+    desc: Compile et téléverse (TARGET=wio_tracker_l1 par défaut)
+    vars:
+      TARGET: '{{.TARGET | default "wio_tracker_l1"}}'
     cmds:
-      - pio run --target upload {{if .PORT}}--upload-port {{.PORT}}{{end}}
+      - pio run -e {{.TARGET}} --target upload {{if .PORT}}--upload-port {{.PORT}}{{end}}
 
   monitor:
     desc: Moniteur série (115200 bauds, Ctrl-C pour quitter)
@@ -29,7 +37,9 @@ tasks:
     desc: Téléverse puis ouvre le moniteur série
     cmds:
       - task: upload
+        vars: { TARGET: '{{.TARGET}}', PORT: '{{.PORT}}' }
       - task: monitor
+        vars: { PORT: '{{.PORT}}' }
 
   ports:
     desc: Liste les ports série détectés
