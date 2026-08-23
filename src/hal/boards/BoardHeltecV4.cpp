@@ -80,11 +80,15 @@ public:
 
   void beginDisplay() override {
     _display.begin();
-    // L'init U8g2 par défaut laisse ce panneau très sombre : on reprend
-    // les réglages de l'init Adafruit SSD1306 (pré-charge et niveau de
-    // désélection VCOMH au maximum), puis contraste à fond.
-    _display.sendF("ca", 0x0d9, 0x0f1);  // pré-charge : phase1=1, phase2=15
-    _display.sendF("ca", 0x0db, 0x040);  // VCOMH deselect level maxi
+    // Le panneau du V4 est un SSD1315 (clone du SSD1306, que l'init U8g2
+    // pilote très bien par ailleurs) : au reset il utilise sa référence
+    // de courant externe et reste à mi-luminosité. La commande 0xAD le
+    // bascule sur l'IREF interne en courant maximal — le correctif connu
+    // pour ces panneaux. Appliqué écran éteint, comme l'exige le
+    // datasheet, puis contraste au maximum.
+    _display.setPowerSave(1);
+    _display.sendF("ca", 0x0ad, 0x030);  // IREF interne, courant maxi
+    _display.setPowerSave(0);
     _display.setContrast(255);
   }
 
