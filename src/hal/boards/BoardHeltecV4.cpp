@@ -57,6 +57,72 @@ const ButtonSpec kButtons[] = {
     {Key::Ok, kPinButtonPrg, /*activeLow=*/true, /*internalPullup=*/true},
 };
 
+// ---------------------------------------------------------------------
+// Diagnostic de luminosité de l'OLED (PRG maintenu au démarrage) : fait
+// défiler en boucle des combinaisons de registres du contrôleur, chaque
+// étape affichée 4 s avec son numéro et un motif de référence. Noter
+// la ou les étapes lumineuses, puis redémarrer sans le bouton.
+// ---------------------------------------------------------------------
+struct RegWrite {
+  uint8_t cmd, arg;
+};
+struct BrightnessStep {
+  const char *label;
+  RegWrite regs[4];
+  uint8_t count;
+};
+
+const BrightnessStep kBrightnessSteps[] = {
+    {"base U8g2", {}, 0},
+    {"contraste 255", {{0x81, 0xff}}, 1},
+    {"IREF interne", {{0xad, 0x30}}, 1},
+    {"IREF int + 255", {{0xad, 0x30}, {0x81, 0xff}}, 2},
+    {"pompe 8.5V", {{0x8d, 0x94}}, 1},
+    {"pompe 9V", {{0x8d, 0x95}}, 1},
+    {"horloge F0", {{0xd5, 0xf0}}, 1},
+    {"tout au maxi", {{0xad, 0x30}, {0x81, 0xff}, {0x8d, 0x95}, {0xd5, 0xf0}}, 4},
+};
+constexpr size_t kBrightnessStepCount =
+    sizeof(kBrightnessSteps) / sizeof(kBrightnessSteps[0]);
+
+// Valeurs de l'init U8g2 (identiques à Adafruit), réappliquées avant
+// chaque étape pour que les effets ne se cumulent pas.
+const RegWrite kBrightnessBaseline[] = {
+    {0x81, 0xcf},  // contraste
+    {0xd9, 0xf1},  // pré-charge
+    {0xdb, 0x40},  // niveau de désélection VCOMH
+    {0xd5, 0x80},  // horloge
+    {0xad, 0x00},  // IREF externe (défaut au reset)
+    {0x8d, 0x14},  // pompe de charge 7,5 V
+};
+
+void runDisplayBrightnessTest(U8G2 &d) {
+  Serial.println(F("Test de luminosité OLED : étapes de 4 s, en boucle"));
+  for (size_t i = 0;; i = (i + 1) % kBrightnessStepCount) {
+    const BrightnessStep &step = kBrightnessSteps[i];
+    d.setPowerSave(1);
+    for (const RegWrite &r : kBrightnessBaseline) {
+      d.sendF("ca", r.cmd, r.arg);
+    }
+    for (uint8_t j = 0; j < step.count; j++) {
+      d.sendF("ca", step.regs[j].cmd, step.regs[j].arg);
+    }
+    d.setPowerSave(0);
+    Serial.printf("Étape %u : %s\n", (unsigned)i + 1, step.label);
+
+    d.clearBuffer();
+    char num[4];
+    snprintf(num, sizeof(num), "%u", (unsigned)i + 1);
+    d.setFont(u8g2_font_logisoso24_tr);
+    d.drawUTF8(0, 30, num);
+    d.setFont(u8g2_font_6x12_tf);
+    d.drawUTF8(28, 24, step.label);
+    d.drawBox(0, 42, d.getDisplayWidth(), 14);  // motif plein de référence
+    d.sendBuffer();
+    delay(4000);
+  }
+}
+
 class HeltecV4Board : public Board {
 public:
   const char *name() const override { return kBoardName; }
@@ -110,16 +176,17 @@ public:
 
   void beginDisplay() override {
     _display.begin();
-    // Les panneaux OLED de la série V4 sont des clones du SSD1306 (type
-    // SSD1315) : au reset ils utilisent leur référence de courant externe
-    // et restent à mi-luminosité. La commande 0xAD les bascule sur l'IREF
-    // interne en courant maximal — le correctif connu pour ces panneaux.
-    // Appliqué écran éteint, comme l'exige le datasheet, puis contraste
-    // au maximum.
-    _display.setPowerSave(1);
-    _display.sendF("ca", 0x0ad, 0x030);  // IREF interne, courant maxi
-    _display.setPowerSave(0);
     _display.setContrast(255);
+    // Diagnostic de luminosité : PRG maintenu pendant le démarrage.
+    // (Le panneau de la série V4 reste anormalement sombre avec une init
+    // pourtant identique registre à registre à celle des firmwares qui
+    // s'affichent fort ; ce mode fait defiler les combinaisons candidates
+    // pour identifier la bonne sur pièce.)
+    pinMode(kPinButtonPrg, INPUT_PULLUP);
+    delay(10);
+    if (digitalRead(kPinButtonPrg) == LOW) {
+      runDisplayBrightnessTest(_display);  // ne revient jamais
+    }
   }
 
   RadioTraits radio() const override {
