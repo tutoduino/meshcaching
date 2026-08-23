@@ -42,14 +42,14 @@ void StatusScreen::drawSleepLogo() {
   u8g2_uint_t x = (_d.getDisplayWidth() - (wSmall + wMedium + wLarge + 2)) / 2;
 
   _d.setFont(u8g2_font_6x12_tf);
-  _d.drawUTF8(x, 50, "z");
+  _d.drawUTF8(x, 54, "z");
   if (phase >= 2) {
     _d.setFont(u8g2_font_helvB12_tr);
-    _d.drawUTF8(x + wSmall + 1, 46, "Z");
+    _d.drawUTF8(x + wSmall + 1, 50, "Z");
   }
   if (phase >= 3) {
     _d.setFont(u8g2_font_logisoso24_tr);
-    _d.drawUTF8(x + wSmall + 1 + wMedium + 1, 42, "Z");
+    _d.drawUTF8(x + wSmall + 1 + wMedium + 1, 46, "Z");
   }
 }
 
