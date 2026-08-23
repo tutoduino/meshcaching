@@ -3,7 +3,7 @@
 #   task build TARGET=heltec_v3    -> compile une seule carte
 #   task upload TARGET=heltec_v3   -> téléverse (défaut : wio_tracker_l1)
 #   task flash TARGET=...          -> téléverse puis ouvre le moniteur série
-# Cibles : wio_tracker_l1, heltec_v3, heltec_v4.
+# Cibles : wio_tracker_l1, heltec_v3, heltec_v4_3, heltec_v4_r8.
 # Port série auto-détecté par PlatformIO ; forcer avec PORT=/dev/ttyACM0.
 # Si l'upload échoue sur le Wio Tracker : double-appui sur RESET = mode
 # bootloader (port DFU), puis relancer.

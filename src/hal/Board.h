@@ -75,10 +75,15 @@ public:
   virtual void radioTxMode() {}
   virtual void radioRxMode() {}
 
-  // LNA externe (FEM) debrayable en réception ? Si oui, setFemLna()
+  // LNA externe (FEM) débrayable en réception ? Si oui, setFemLna()
   // choisit l'aiguillage appliqué au prochain passage en réception.
   virtual bool hasFemLna() const { return false; }
   virtual void setFemLna(bool /*enabled*/) {}
+
+  // Auto-test matériel effectué pendant initPower() : message d'erreur
+  // si la carte n'est pas celle attendue (nullptr sinon). L'application
+  // le vérifie après l'init de l'écran et s'arrête là en cas d'échec.
+  virtual const char *selfCheckError() const { return nullptr; }
 
   virtual const ButtonSpec *buttons(size_t &count) const = 0;
 };

@@ -15,8 +15,8 @@
 #include "hal/Board.h"
 
 #if !defined(BOARD_WIO_TRACKER_L1) && !defined(BOARD_HELTEC_V3) && \
-    !defined(BOARD_HELTEC_V4) && !defined(BOARD_HELTEC_V4_R8)
-#error "Aucune carte sélectionnée : compiler via un environnement PlatformIO (pio run -e wio_tracker_l1 | heltec_v3 | heltec_v4 | heltec_v4_r8)"
+    !defined(BOARD_HELTEC_V4_3) && !defined(BOARD_HELTEC_V4_R8)
+#error "Aucune carte sélectionnée : compiler via un environnement PlatformIO (pio run -e wio_tracker_l1 | heltec_v3 | heltec_v4_3 | heltec_v4_r8)"
 #endif
 
 // Construction à la première utilisation : évite de dépendre de l'ordre

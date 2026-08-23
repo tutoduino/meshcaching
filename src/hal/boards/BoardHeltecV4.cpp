@@ -1,7 +1,7 @@
-#if defined(BOARD_HELTEC_V4) || defined(BOARD_HELTEC_V4_R8)
+#if defined(BOARD_HELTEC_V4_3) || defined(BOARD_HELTEC_V4_R8)
 // =====================================================================
 // Heltec WiFi LoRa 32 V4 — deux déclinaisons partagent cette carte :
-//  - BOARD_HELTEC_V4 : révision 4.3 (ESP32-S3R2, 2 Mo PSRAM) ;
+//  - BOARD_HELTEC_V4_3 : révision 4.3 (ESP32-S3R2, 2 Mo PSRAM) ;
 //  - BOARD_HELTEC_V4_R8 : série "R8" (ESP32-S3R8, 8 Mo PSRAM), vendue
 //    ensuite, qui ne diffère ici que par son rail Vext (GPIO40, actif
 //    à l'état BAS, contre GPIO36 actif HAUT sur la 4.3).
@@ -13,8 +13,9 @@
 // Valeurs reprises du firmware MeshCore (variants/heltec_v4{,_r8}).
 //
 // Note : les V4 antérieurs au 4.3 embarquent un autre FEM (GC1109,
-// pilotage différent) et ne sont pas gérés ici. Les déclinaisons TFT et
-// e-ink ne sont pas gérées non plus.
+// pilotage différent) et ne sont pas gérés : initPower() le détecte et
+// bloque le démarrage. Les déclinaisons TFT et e-ink ne sont pas gérées
+// non plus.
 // =====================================================================
 #include "../Board.h"
 
@@ -64,21 +65,36 @@ public:
     pinMode(kPinVext, OUTPUT);
     digitalWrite(kPinVext, kVextOnLevel);  // allume le rail Vext (OLED)
 
-    // Alimente puis configure le FEM. CSD haut = FEM actif ; CTX haut au
-    // départ = PA dans le chemin d'émission, LNA contourné en réception.
-    // L'aiguillage RX est ensuite géré par radioRxMode() selon setFemLna().
-    // Attention si le LNA est activé : son gain s'ajoute au RSSI mesuré
-    // par le SX1262, précisément la donnée que cet appareil affiche.
+    // Alimente le FEM puis identifie sa référence par le niveau de repos
+    // de CSD (astuce reprise de MeshCore) : pull-up interne sur le
+    // KCT8103L (V4.3 et R8) -> HIGH, pull-down sur le GC1109 (V4 <= 4.2)
+    // -> LOW. Un GC1109 se pilote différemment : plutôt que d'émettre à
+    // travers un FEM mal configuré, on coupe son alimentation et on
+    // laisse l'application s'arrêter sur selfCheckError().
     pinMode(kPinFemLdo, OUTPUT);
     digitalWrite(kPinFemLdo, HIGH);
     delay(1);  // temps de démarrage du FEM
-    pinMode(kPinFemCsd, OUTPUT);
-    digitalWrite(kPinFemCsd, HIGH);
-    pinMode(kPinFemCtx, OUTPUT);
-    digitalWrite(kPinFemCtx, HIGH);
+    pinMode(kPinFemCsd, INPUT);
+    delay(1);
+    if (digitalRead(kPinFemCsd) == LOW) {
+      digitalWrite(kPinFemLdo, LOW);
+      _selfCheckError = "FEM GC1109 (V4<=4.2)";
+    } else {
+      // Configure le FEM. CSD haut = actif ; CTX haut au départ = PA dans
+      // le chemin d'émission, LNA contourné en réception. L'aiguillage RX
+      // est ensuite géré par radioRxMode() selon setFemLna(). Attention si
+      // le LNA est activé : son gain s'ajoute au RSSI mesuré par le
+      // SX1262, précisément la donnée que cet appareil affiche.
+      pinMode(kPinFemCsd, OUTPUT);
+      digitalWrite(kPinFemCsd, HIGH);
+      pinMode(kPinFemCtx, OUTPUT);
+      digitalWrite(kPinFemCtx, HIGH);
+    }
 
     delay(150);  // stabilisation du Vext avant l'init de l'OLED
   }
+
+  const char *selfCheckError() const override { return _selfCheckError; }
 
   void radioTxMode() override { digitalWrite(kPinFemCtx, HIGH); }
 
@@ -132,6 +148,7 @@ public:
   }
 
 private:
+  const char *_selfCheckError = nullptr;
   bool _femLnaEnabled = false;
   U8G2_SSD1306_128X64_NONAME_F_HW_I2C _display{U8G2_R0, kPinOledReset,
                                                kPinOledScl, kPinOledSda};
@@ -143,4 +160,4 @@ Board &board() {
   static HeltecV4Board instance;
   return instance;
 }
-#endif  // BOARD_HELTEC_V4 || BOARD_HELTEC_V4_R8
+#endif  // BOARD_HELTEC_V4_3 || BOARD_HELTEC_V4_R8

@@ -53,6 +53,15 @@ void App::setup() {
   _board.beginDisplay();
   _screen.showMessage("Initialisation...");
 
+  // Carte inattendue (p. ex. Heltec V4.2 flashé avec le build V4.3) :
+  // on s'arrête avant de toucher à la radio.
+  if (const char *err = _board.selfCheckError()) {
+    Serial.print(F("Carte incompatible : "));
+    Serial.println(err);
+    _screen.showMessage("Carte incompatible", err);
+    while (true) {}
+  }
+
   size_t buttonCount = 0;
   const ButtonSpec *specs = _board.buttons(buttonCount);
   _buttons.begin(specs, buttonCount);
