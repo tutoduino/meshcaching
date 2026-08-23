@@ -47,10 +47,13 @@ void App::setup() {
   Serial.begin(115200);
   delay(200);
 
-  Serial.printf("Carte : %s\n", _board.name());
+  Serial.printf("MeshCaching %s — carte : %s\n", MESHCACHING_VERSION,
+                _board.name());
 
   _board.initPower();
   _board.beginDisplay();
+  uint32_t splashStartMs = millis();
+  _screen.showSplash(MESHCACHING_VERSION);
 
   // Carte inattendue (p. ex. Heltec V4.2 flashé avec le build V4.3) :
   // on s'arrête avant de toucher à la radio.
@@ -86,7 +89,13 @@ void App::setup() {
                 (unsigned)_settings.rxGainMode);
 
   Serial.println(F("En attente de paquets MeshCore..."));
-  refreshDisplay();  // écran principal directement (logo de scan)
+  // Laisse l'écran de démarrage visible le temps voulu — l'init de la
+  // radio et de la config a tourné pendant ce temps — puis écran
+  // principal directement (logo de scan).
+  while (millis() - splashStartMs < config::kSplashMs) {
+    delay(10);
+  }
+  refreshDisplay();
 }
 
 void App::loop() {

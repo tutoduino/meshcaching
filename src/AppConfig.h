@@ -2,11 +2,19 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// Version du firmware, injectée par scripts/version.py (git describe)
+#ifndef MESHCACHING_VERSION
+#define MESHCACHING_VERSION "dev"
+#endif
+
 // =====================================================================
 // Configuration de l'application, identique pour toutes les cartes.
 // Ce qui dépend du matériel vit dans src/hal/boards/.
 // =====================================================================
 namespace config {
+
+// Durée de l'écran de démarrage (MESHCACHING + version)
+constexpr uint32_t kSplashMs = 4000;
 
 // --- Paramètres radio : preset MeshCore Île-de-France ---
 constexpr float kLoraFreqMhz = 869.618f;

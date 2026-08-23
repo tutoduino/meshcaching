@@ -12,6 +12,19 @@ void StatusScreen::showMessage(const char *line1, const char *line2) {
   _d.sendBuffer();
 }
 
+void StatusScreen::showSplash(const char *version) {
+  _d.clearBuffer();
+  _d.setFont(u8g2_font_helvB12_tr);
+  u8g2_uint_t w = _d.getUTF8Width("MESHCACHING");
+  u8g2_uint_t x = w < _d.getDisplayWidth() ? (_d.getDisplayWidth() - w) / 2 : 0;
+  _d.drawUTF8(x, 32, "MESHCACHING");
+  _d.setFont(u8g2_font_6x12_tf);
+  w = _d.getUTF8Width(version);
+  x = w < _d.getDisplayWidth() ? (_d.getDisplayWidth() - w) / 2 : 0;
+  _d.drawUTF8(x, 50, version);
+  _d.sendBuffer();
+}
+
 void StatusScreen::drawScanLogo() {
   // Ondes concentriques émises par un point : le scan est en cours.
   // La phase avance avec le temps pour animer la propagation.

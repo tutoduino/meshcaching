@@ -28,6 +28,9 @@ public:
 
   void showMessage(const char *line1, const char *line2 = "");
 
+  // Écran de démarrage : MESHCACHING en grand, version en dessous.
+  void showSplash(const char *version);
+
   // Écran principal : RSSI en grand tant qu'il est frais, sinon logo de
   // scan animé ; témoin TX, barre de réarmement de l'émission, flash.
   void drawMain(const MainView &view);
