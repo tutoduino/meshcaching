@@ -34,16 +34,18 @@ void StatusScreen::drawMain(const MainView &v) {
   snprintf(buf, sizeof(buf), "RÉPÉTEUR %02X%02X", v.pubkeyPrefix[0],
            v.prefixLen >= 2 ? v.pubkeyPrefix[1] : 0);
   _d.drawUTF8(0, 10, buf);
-  if (v.txActive) {
-    _d.drawBox(110, 0, 18, 12);
+  if (v.txBadge != nullptr) {
+    u8g2_uint_t badgeWidth = _d.getUTF8Width(v.txBadge) + 6;
+    u8g2_uint_t badgeX = _d.getDisplayWidth() - badgeWidth;
+    _d.drawBox(badgeX, 0, badgeWidth, 12);
     _d.setDrawColor(0);
-    _d.drawUTF8(113, 10, "TX");
+    _d.drawUTF8(badgeX + 3, 10, v.txBadge);
     _d.setDrawColor(1);
   }
   _d.drawHLine(0, 13, _d.getDisplayWidth());
 
   if (v.rssiValid) {
-    // --- RSSI en grand, centré, avec le SNR en dessous ---
+    // --- RSSI en grand, centré ---
     _d.setFont(u8g2_font_logisoso24_tr);
     snprintf(buf, sizeof(buf), "%d", (int)lroundf(v.rssi));
     u8g2_uint_t w = _d.getUTF8Width(buf);
@@ -51,12 +53,21 @@ void StatusScreen::drawMain(const MainView &v) {
     _d.drawUTF8(x, 44, buf);
     _d.setFont(u8g2_font_6x12_tf);
     _d.drawUTF8(x + w + 3, 44, "dBm");
-    int snr10 = (int)lroundf(v.snr * 10.0f);
-    snprintf(buf, sizeof(buf), "SNR %s%d.%c dB", snr10 < 0 ? "-" : "",
-             abs(snr10) / 10, (char)('0' + abs(snr10) % 10));
-    _d.drawUTF8((_d.getDisplayWidth() - _d.getUTF8Width(buf)) / 2, 58, buf);
   } else {
     drawScanLogo();
+  }
+
+  // --- Ligne d'infos : bruit de fond à gauche, SNR à droite ---
+  _d.setFont(u8g2_font_6x12_tf);
+  if (v.noiseValid) {
+    snprintf(buf, sizeof(buf), "NF %d", (int)lroundf(v.noiseDbm));
+    _d.drawUTF8(0, 58, buf);
+  }
+  if (v.rssiValid) {
+    int snr10 = (int)lroundf(v.snr * 10.0f);
+    snprintf(buf, sizeof(buf), "SNR %s%d.%c", snr10 < 0 ? "-" : "",
+             abs(snr10) / 10, (char)('0' + abs(snr10) % 10));
+    _d.drawUTF8(_d.getDisplayWidth() - _d.getUTF8Width(buf), 58, buf);
   }
 
   // --- Barre décroissante : temps avant la prochaine émission possible ---

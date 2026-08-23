@@ -27,8 +27,18 @@ public:
   // la carte en a un, ou rien) ; remet la radio en écoute.
   void setRxGainMode(RxGainMode mode);
 
+  // LBT : attend que le canal soit libre (CAD du SX126x), en retentant
+  // après un slot court aléatoire, jusqu'à la deadline. Renvoie false si
+  // le canal est resté occupé (la radio est alors remise en écoute) ;
+  // renvoie true canal libre, à enchaîner immédiatement avec transmit().
+  bool waitChannelClear(uint32_t deadlineMs, uint32_t slotMinMs,
+                        uint32_t slotMaxMs);
+
   // Émet puis repasse en écoute.
   int16_t transmit(const uint8_t *data, size_t len);
+
+  // RSSI instantané, lu sans perturber la réception en cours.
+  float rssiInstant() { return _lora.getRSSI(false); }
 
   // true si un paquet est arrivé depuis le dernier appel
   bool packetAvailable();

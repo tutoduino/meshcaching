@@ -44,6 +44,9 @@ struct RadioTraits {
   // Gain (dB) d'un ampli FEM externe en émission : la puissance demandée
   // "à l'antenne" est réduite d'autant avant d'être passée au SX1262.
   int8_t femTxGainDb = 0;
+  // Patch du registre 0x8B5 (non documenté) : recette Heltec reprise du
+  // firmware MeshCore, "improved RX" sur les V4 équipés d'un FEM.
+  bool femRxPatch = false;
 };
 
 // Plancher de puissance du SX1262 ; la borne haute est propre à chaque

@@ -33,6 +33,19 @@ constexpr uint32_t kTxCooldownMs = 5000;
 // Durée d'affichage du témoin d'émission "TX"
 constexpr uint32_t kTxIndicatorMs = 700;
 
+// LBT (écoute avant émission, CAD du SX126x) : canal occupé -> nouvel
+// essai après un slot court aléatoire, abandon à la deadline — pas de
+// TX forcé, contrairement à MeshCore (même deadline qu'eux).
+constexpr uint32_t kLbtDeadlineMs = 4000;
+constexpr uint32_t kLbtSlotMinMs = 100;
+constexpr uint32_t kLbtSlotMaxMs = 300;
+// Durée d'affichage du témoin "OCCUPÉ" après un abandon LBT
+constexpr uint32_t kLbtBusyMsgMs = 2000;
+
+// Bruit de fond : cadence d'échantillonnage du RSSI instantané (la
+// médiane par cycle de 64 est dans NoiseFloor)
+constexpr uint32_t kNoiseSampleIntervalMs = 20;
+
 // Clignotement quand une réponse valide vient de rafraîchir le RSSI :
 // une seule inversion de l'écran, de cette durée.
 constexpr uint32_t kRxFlashMs = 150;

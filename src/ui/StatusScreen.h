@@ -11,7 +11,10 @@ struct MainView {
   bool rssiValid;                // false : logo de scan à la place du RSSI
   float rssi;
   float snr;
-  bool txActive;                 // témoin d'émission
+  bool noiseValid;               // bruit de fond mesuré (médiane) dispo ?
+  float noiseDbm;
+  const char *txBadge;           // témoin d'émission ("LBT", "TX",
+                                 // "OCCUPÉ"...) ; nullptr = rien
   bool invert;                   // clignotement : trame inversée
   uint32_t cooldownRemainingMs;  // avant la prochaine émission (0 = prêt)
   uint32_t cooldownTotalMs;

@@ -132,6 +132,7 @@ public:
     t.tcxoVoltage = 1.8f;
     t.currentLimitmA = 140;
     t.femTxGainDb = kFemTxGainDb;
+    t.femRxPatch = true;
     return t;
   }
 

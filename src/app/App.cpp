@@ -104,6 +104,14 @@ void App::loop() {
     applyMenuResult();
   }
 
+  // Bruit de fond : échantillonnage continu du RSSI instantané — la
+  // radio reste en écoute, la lecture est non intrusive. Les paquets qui
+  // passent polluent quelques échantillons, la médiane les rejette.
+  if (millis() - _lastNoiseSampleMs >= config::kNoiseSampleIntervalMs) {
+    _lastNoiseSampleMs = millis();
+    _noise.addSample(_radio.rssiInstant());
+  }
+
   // Rafraîchit l'écran principal (animations, barre de réarmement,
   // péremption du RSSI) — jamais par-dessus le menu
   if (!_menu.isOpen() &&
@@ -162,7 +170,30 @@ void App::refreshDisplay() {
                    now - _target.lastSeenMs < config::kRssiFreshnessMs;
   view.rssi = _target.rssi;
   view.snr = _target.snr;
-  view.txActive = _hasPinged && now - _lastPingMs < config::kTxIndicatorMs;
+  view.txBadge = nullptr;
+  switch (_txPhase) {
+    case TxPhase::Lbt:
+      view.txBadge = "LBT";
+      break;
+    case TxPhase::Tx:
+      if (now - _txPhaseSinceMs < config::kTxIndicatorMs) {
+        view.txBadge = "TX";
+      } else {
+        _txPhase = TxPhase::Idle;
+      }
+      break;
+    case TxPhase::Busy:
+      if (now - _txPhaseSinceMs < config::kLbtBusyMsgMs) {
+        view.txBadge = "OCCUPÉ";
+      } else {
+        _txPhase = TxPhase::Idle;
+      }
+      break;
+    default:
+      break;
+  }
+  view.noiseValid = _noise.hasValue();
+  view.noiseDbm = _noise.valueDbm();
   view.invert = _target.hasPacket && now - _rxFlashStartMs < config::kRxFlashMs;
   uint32_t sincePing = now - _lastPingMs;
   view.cooldownTotalMs = config::kTxCooldownMs;
@@ -178,14 +209,34 @@ void App::sendTracePing() {
     return;  // réarmement en cours : pas plus d'une émission par période
   }
 
+  // LBT : on n'émet que si le canal est libre. Contrairement à MeshCore,
+  // pas de TX forcé à la deadline : on abandonne et on l'affiche.
+  _txPhase = TxPhase::Lbt;
+  _txPhaseSinceMs = now;
+  if (!_menu.isOpen()) {
+    refreshDisplay();  // témoin LBT pendant l'écoute bloquante
+  }
+  if (!_radio.waitChannelClear(config::kLbtDeadlineMs, config::kLbtSlotMinMs,
+                               config::kLbtSlotMaxMs)) {
+    _txPhase = TxPhase::Busy;
+    _txPhaseSinceMs = millis();
+    Serial.println(F("LBT : canal occupé, émission abandonnée"));
+    if (!_menu.isOpen()) {
+      refreshDisplay();
+    }
+    return;  // rien n'a été émis : pas de réarmement
+  }
+
   uint8_t buf[meshcore::kTracePingLen];
   uint32_t tag = sysRandom32();  // identifiant aléatoire de cette requête
   size_t len =
       meshcore::buildTracePing(buf, tag, _settings.targetPrefix[0]);
 
   _lastSentTag = tag;  // on retiendra ce tag pour reconnaître la réponse
-  _lastPingMs = now;
+  _lastPingMs = millis();
   _hasPinged = true;
+  _txPhase = TxPhase::Tx;
+  _txPhaseSinceMs = _lastPingMs;
   if (!_menu.isOpen()) {
     refreshDisplay();  // témoin TX et barre pleine, avant l'émission bloquante
   }

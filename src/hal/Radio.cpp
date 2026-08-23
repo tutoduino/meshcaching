@@ -2,6 +2,8 @@
 
 #include <SPI.h>
 
+#include "SysRandom.h"
+
 #if defined(ESP32)
 #define RADIO_ISR_ATTR IRAM_ATTR
 #else
@@ -73,8 +75,37 @@ int16_t Radio::begin(float freqMhz, float bwKhz, uint8_t sf, uint8_t cr,
   // La chaîne de gain RX (boost SX126x / LNA FEM) est appliquée ensuite
   // par l'application via setRxGainMode(), selon la config persistée.
 
+  if (_traits.femRxPatch) {
+    // Registre 0x8B5 non documenté : "improved RX" pour les Heltec V4 à
+    // FEM, en parité avec le firmware MeshCore (recette Heltec).
+    uint8_t value = 0;
+    _lora.readRegister(0x8B5, &value, 1);
+    value |= 0x01;
+    _lora.writeRegister(0x8B5, &value, 1);
+  }
+
   _lora.setDio1Action(onDio1Isr);
   return startReceive();
+}
+
+bool Radio::waitChannelClear(uint32_t deadlineMs, uint32_t slotMinMs,
+                             uint32_t slotMaxMs) {
+  uint32_t start = millis();
+  for (;;) {
+    int16_t state = _lora.scanChannel();
+    if (state == RADIOLIB_CHANNEL_FREE) {
+      return true;  // l'appelant enchaîne sur transmit()
+    }
+    // Canal occupé — une erreur de scan est traitée pareil : on retente.
+    // Le CAD lève aussi DIO1 : on efface le drapeau avant de repartir.
+    s_packetFlag = false;
+    startReceive();
+    if (millis() - start >= deadlineMs) {
+      return false;
+    }
+    uint32_t slot = slotMinMs + sysRandom32() % (slotMaxMs - slotMinMs + 1);
+    delay(slot);  // slot court aléatoire, radio à l'écoute pendant ce temps
+  }
 }
 
 int16_t Radio::transmit(const uint8_t *data, size_t len) {

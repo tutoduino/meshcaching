@@ -7,6 +7,7 @@
 #include "../hal/Settings.h"
 #include "../ui/SettingsMenu.h"
 #include "../ui/StatusScreen.h"
+#include "NoiseFloor.h"
 
 // =====================================================================
 // Application : géolocalisation d'un répéteur MeshCore.
@@ -46,15 +47,23 @@ private:
   StatusScreen _screen;
   SettingsMenu _menu;
 
+  // Séquence d'émission : LBT en cours, émission faite, ou canal resté
+  // occupé (abandon) — pilote le témoin en haut de l'écran.
+  enum class TxPhase : uint8_t { Idle, Lbt, Tx, Busy };
+
   AppSettings _settings{};
   RepeaterStatus _target;
+  NoiseFloor _noise;
   // Tag de la dernière requête TRACE envoyée, et instant d'envoi :
   // permet de reconnaître la réponse (qui renvoie ce même tag), et
   // sert d'ancre au réarmement de l'émission (kTxCooldownMs).
   uint32_t _lastSentTag = 0;
   uint32_t _lastPingMs = 0;
   bool _hasPinged = false;
+  TxPhase _txPhase = TxPhase::Idle;
+  uint32_t _txPhaseSinceMs = 0;
   // Départ du clignotement declenché par une réponse valide
   uint32_t _rxFlashStartMs = 0;
+  uint32_t _lastNoiseSampleMs = 0;
   uint32_t _lastDisplayRefreshMs = 0;
 };

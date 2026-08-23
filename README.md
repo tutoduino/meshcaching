@@ -43,11 +43,17 @@ mais seulement comme valeur d'usine, modifiable ensuite via le menu.
 
 Écran principal : RSSI du répéteur cible en grand (avec SNR) tant qu'un
 paquet a été reçu il y a moins de 5 s ; au-delà, un logo de scan animé
-reprend la place. Un témoin « TX » s'affiche à l'émission, l'écran clignote
-(inversion) quand une réponse valide rafraîchit le RSSI, et une barre
-décroissante en bas indique le réarmement de l'émission (au plus un ping
-toutes les 5 s — les deux durées de 5 s sont des constantes indépendantes
-dans `src/AppConfig.h`).
+reprend la place. L'écran clignote (inversion) quand une réponse valide
+rafraîchit le RSSI, et une barre décroissante en bas indique le réarmement
+de l'émission (au plus un ping toutes les 5 s — les deux durées de 5 s sont
+des constantes indépendantes dans `src/AppConfig.h`).
+
+L'émission est précédée d'un LBT (écoute du canal par CAD) : essais espacés
+de slots aléatoires courts pendant 4 s au plus, puis abandon — pas de TX
+forcé. Le témoin en haut à droite suit la séquence : « LBT », puis « TX »,
+ou « OCCUPÉ » en cas d'abandon. Le bruit de fond (médiane de 64 lectures de
+RSSI instantané, évaluation continue et non intrusive) s'affiche en bas à
+gauche (« NF »), le SNR du dernier paquet en bas à droite.
 
 - **Ping TRACE** : appui court sur Ok (joystick sur le L1, bouton PRG sur les
   Heltec).
