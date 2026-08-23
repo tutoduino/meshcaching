@@ -5,8 +5,10 @@ l'appareil affiche le RSSI (niveau de signal) et le temps écoulé depuis la
 dernière réception d'un paquet provenant d'un répéteur donné, et permet de le
 « pinger » avec un paquet TRACE (le ping natif de MeshCore) via le bouton.
 
-Basé sur le sketch de [Tutoduino](https://tutoduino.fr/menu-sdr/geolocalisation-repeteur-meshcore/),
-restructuré en projet PlatformIO multi-cartes.
+Firmware compagnon de l'article
+[Géolocalisation d'un répéteur MeshCore](https://tutoduino.fr/menu-sdr/geolocalisation-repeteur-meshcore/)
+de Tutoduino, préconisé pour l'évènement
+[MeshCaching Île-de-France](https://tutoduino.fr/blog/meshcaching/).
 
 ## Cartes supportées
 
