@@ -58,7 +58,8 @@ const ButtonSpec kButtons[] = {
 };
 
 // ---------------------------------------------------------------------
-// Diagnostic de luminosité de l'OLED (PRG maintenu au démarrage) : fait
+// Diagnostic de luminosité de l'OLED (PRG maintenu pendant l'invite qui
+// suit le démarrage — pas pendant le reset, cf. beginDisplay) : fait
 // défiler en boucle des combinaisons de registres du contrôleur, chaque
 // étape affichée 4 s avec son numéro et un motif de référence. Noter
 // la ou les étapes lumineuses, puis redémarrer sans le bouton.
@@ -177,15 +178,22 @@ public:
   void beginDisplay() override {
     _display.begin();
     _display.setContrast(255);
-    // Diagnostic de luminosité : PRG maintenu pendant le démarrage.
-    // (Le panneau de la série V4 reste anormalement sombre avec une init
-    // pourtant identique registre à registre à celle des firmwares qui
-    // s'affichent fort ; ce mode fait defiler les combinaisons candidates
-    // pour identifier la bonne sur pièce.)
+    // Diagnostic de luminosité. PRG partage GPIO0, la broche de strap du
+    // bootloader : maintenu PENDANT le reset, il place l'ESP32 en mode
+    // download (écran noir), pas dans ce test. On échantillonne donc le
+    // bouton juste APRÈS le démarrage : relâcher RESET, puis maintenir
+    // PRG pendant que l'invite ci-dessous est affichée.
     pinMode(kPinButtonPrg, INPUT_PULLUP);
-    delay(10);
-    if (digitalRead(kPinButtonPrg) == LOW) {
-      runDisplayBrightnessTest(_display);  // ne revient jamais
+    _display.clearBuffer();
+    _display.setFont(u8g2_font_6x12_tf);
+    _display.drawUTF8(0, 12, "PRG = test écran");
+    _display.sendBuffer();
+    uint32_t deadline = millis() + 1500;
+    while (millis() < deadline) {
+      if (digitalRead(kPinButtonPrg) == LOW) {
+        runDisplayBrightnessTest(_display);  // ne revient jamais
+      }
+      delay(10);
     }
   }
 
