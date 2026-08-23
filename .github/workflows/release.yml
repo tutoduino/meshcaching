@@ -1,4 +1,4 @@
-# Release : à chaque tag semver (vX.Y.Z), compile les quatre cibles et
+# Release : à chaque tag semver (vX.Y.Z), compile toutes les cibles et
 # publie les binaires prêts à flasher (cf. scripts/package.sh).
 name: release
 
