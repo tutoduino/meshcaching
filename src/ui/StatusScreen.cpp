@@ -29,17 +29,27 @@ void StatusScreen::drawMain(const MainView &v) {
   _d.clearBuffer();
   char buf[24];
 
-  // --- Bandeau : répéteur surveillé + témoin d'émission ---
+  // --- Bandeau : répéteur surveillé, bruit de fond, témoin d'émission ---
   _d.setFont(u8g2_font_6x12_tf);
-  snprintf(buf, sizeof(buf), "RÉPÉTEUR %02X%02X", v.pubkeyPrefix[0],
+  snprintf(buf, sizeof(buf), "RPT %02X%02X", v.pubkeyPrefix[0],
            v.prefixLen >= 2 ? v.pubkeyPrefix[1] : 0);
   _d.drawUTF8(0, 10, buf);
+  if (v.noiseValid) {
+    snprintf(buf, sizeof(buf), "NF %d", (int)lroundf(v.noiseDbm));
+    _d.drawUTF8(56, 10, buf);
+  }
   if (v.txBadge != nullptr) {
-    u8g2_uint_t badgeWidth = _d.getUTF8Width(v.txBadge) + 6;
+    // Taille fixe (calée sur "LBT") pour que LBT -> TX ne fasse pas
+    // bouger le bandeau, texte centré ; "OCCUPÉ" s'élargit juste assez.
+    u8g2_uint_t textWidth = _d.getUTF8Width(v.txBadge);
+    u8g2_uint_t badgeWidth = _d.getUTF8Width("LBT") + 6;
+    if (textWidth + 6 > badgeWidth) {
+      badgeWidth = textWidth + 6;
+    }
     u8g2_uint_t badgeX = _d.getDisplayWidth() - badgeWidth;
     _d.drawBox(badgeX, 0, badgeWidth, 12);
     _d.setDrawColor(0);
-    _d.drawUTF8(badgeX + 3, 10, v.txBadge);
+    _d.drawUTF8(badgeX + (badgeWidth - textWidth) / 2, 10, v.txBadge);
     _d.setDrawColor(1);
   }
   _d.drawHLine(0, 13, _d.getDisplayWidth());
@@ -57,17 +67,13 @@ void StatusScreen::drawMain(const MainView &v) {
     drawScanLogo();
   }
 
-  // --- Ligne d'infos : bruit de fond à gauche, SNR à droite ---
-  _d.setFont(u8g2_font_6x12_tf);
-  if (v.noiseValid) {
-    snprintf(buf, sizeof(buf), "NF %d", (int)lroundf(v.noiseDbm));
-    _d.drawUTF8(0, 58, buf);
-  }
+  // --- SNR du dernier paquet, centré sous le RSSI ---
   if (v.rssiValid) {
+    _d.setFont(u8g2_font_6x12_tf);
     int snr10 = (int)lroundf(v.snr * 10.0f);
-    snprintf(buf, sizeof(buf), "SNR %s%d.%c", snr10 < 0 ? "-" : "",
+    snprintf(buf, sizeof(buf), "SNR %s%d.%c dB", snr10 < 0 ? "-" : "",
              abs(snr10) / 10, (char)('0' + abs(snr10) % 10));
-    _d.drawUTF8(_d.getDisplayWidth() - _d.getUTF8Width(buf), 58, buf);
+    _d.drawUTF8((_d.getDisplayWidth() - _d.getUTF8Width(buf)) / 2, 58, buf);
   }
 
   // --- Barre décroissante : temps avant la prochaine émission possible ---
