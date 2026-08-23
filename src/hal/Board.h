@@ -41,11 +41,14 @@ struct RadioTraits {
   bool dio2AsRfSwitch = false;
   float tcxoVoltage = 0.0f;    // volts ; 0 = quartz simple, pas de TCXO
   uint8_t currentLimitmA = 60;
-  bool rxBoostedGain = false;
   // Gain (dB) d'un ampli FEM externe en emission : la puissance demandee
   // "a l'antenne" est reduite d'autant avant d'etre passee au SX1262.
   int8_t femTxGainDb = 0;
 };
+
+// Plancher de puissance du SX1262 ; la borne haute est propre a chaque
+// carte (txPowerMaxDbm).
+constexpr int8_t kTxPowerMinDbm = -9;
 
 class Board {
 public:
@@ -71,6 +74,11 @@ public:
   // Commutation TX/RX d'un FEM externe, si la carte en a un a piloter.
   virtual void radioTxMode() {}
   virtual void radioRxMode() {}
+
+  // LNA externe (FEM) debrayable en reception ? Si oui, setFemLna()
+  // choisit l'aiguillage applique au prochain passage en reception.
+  virtual bool hasFemLna() const { return false; }
+  virtual void setFemLna(bool /*enabled*/) {}
 
   virtual const ButtonSpec *buttons(size_t &count) const = 0;
 };

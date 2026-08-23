@@ -60,7 +60,6 @@ public:
     // echoue (le quartz ne demarre jamais).
     t.tcxoVoltage = SX126X_DIO3_TCXO_VOLTAGE;
     t.currentLimitmA = 140;
-    t.rxBoostedGain = true;
     return t;
   }
 

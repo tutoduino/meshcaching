@@ -4,14 +4,17 @@
 #include "../hal/Board.h"
 #include "../hal/Buttons.h"
 #include "../hal/Radio.h"
+#include "../hal/Settings.h"
+#include "../ui/SettingsMenu.h"
 #include "../ui/StatusScreen.h"
 
 // =====================================================================
 // Application : geolocalisation d'un repeteur MeshCore.
 //
 // Affiche le RSSI et le temps ecoule depuis la derniere reception d'un
-// paquet provenant du repeteur cible (config::kTargetPubkeyPrefix), et
-// permet de le "pinger" avec un paquet TRACE via le bouton Ok.
+// paquet provenant du repeteur cible, permet de le "pinger" avec un
+// paquet TRACE, et propose un menu de reglages persistes (repeteur
+// cible, puissance TX, gain RX).
 // =====================================================================
 class App {
 public:
@@ -29,8 +32,10 @@ private:
     float snr = 0;
   };
 
+  void loadSettings();
+  void applyMenuResult();
   void refreshDisplay();
-  void handleKey(Key key);
+  void handleMainEvent(const ButtonEvent &event);
   void sendTracePing();
   void handleIncomingPacket();
   bool packetComesFromTarget(const uint8_t *packet, size_t len);
@@ -39,7 +44,9 @@ private:
   Radio _radio;
   Buttons _buttons;
   StatusScreen _screen;
+  SettingsMenu _menu;
 
+  AppSettings _settings{};
   RepeaterStatus _target;
   // Tag de la derniere requete TRACE envoyee, et instant d'envoi :
   // permet de reconnaitre la reponse (qui renvoie ce meme tag).

@@ -49,7 +49,6 @@ public:
     t.dio2AsRfSwitch = true;  // DIO2 pilote le switch d'antenne
     t.tcxoVoltage = 1.8f;
     t.currentLimitmA = 140;
-    t.rxBoostedGain = true;
     return t;
   }
 

@@ -2,6 +2,7 @@
 #include <RadioLib.h>
 
 #include "Board.h"
+#include "RxGain.h"
 
 // Enveloppe du SX1262 (RadioLib) : le cablage vient de la description de
 // carte, et la puissance TX s'exprime "a l'antenne" — le gain d'un
@@ -18,9 +19,13 @@ public:
   int16_t begin(float freqMhz, float bwKhz, uint8_t sf, uint8_t cr,
                 int8_t txPowerDbm);
 
-  // Puissance a l'antenne, bornee au maximum de la carte.
+  // Puissance a l'antenne, bornee a la plage de la carte.
   void setTxPowerDbm(int8_t antennaDbm);
   int8_t txPowerDbm() const { return _antennaDbm; }
+
+  // Chaine de gain en reception (boost interne du SX126x, LNA du FEM si
+  // la carte en a un, ou rien) ; remet la radio en ecoute.
+  void setRxGainMode(RxGainMode mode);
 
   // Emet puis repasse en ecoute.
   int16_t transmit(const uint8_t *data, size_t len);

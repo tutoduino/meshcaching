@@ -11,12 +11,13 @@ void Buttons::begin(const ButtonSpec *specs, size_t count) {
     State &s = _states[i];
     s.spec = specs[i];
     pinMode(s.spec.pin, s.spec.internalPullup ? INPUT_PULLUP : INPUT);
-    s.raw = s.stable = false;
+    s.raw = s.stable = s.longFired = false;
     s.lastEdgeMs = millis();
+    s.pressedAtMs = 0;
   }
 }
 
-bool Buttons::poll(Key &key) {
+bool Buttons::poll(ButtonEvent &event) {
   uint32_t now = millis();
   for (size_t i = 0; i < _count; i++) {
     State &s = _states[i];
@@ -28,9 +29,17 @@ bool Buttons::poll(Key &key) {
     if (s.raw != s.stable && now - s.lastEdgeMs >= kDebounceMs) {
       s.stable = s.raw;
       if (s.stable) {
-        key = s.spec.key;
+        s.pressedAtMs = now;
+        s.longFired = false;
+      } else if (!s.longFired) {
+        event = {s.spec.key, false};  // clic court, emis au relacher
         return true;
       }
+    }
+    if (s.stable && !s.longFired && now - s.pressedAtMs >= kLongPressMs) {
+      s.longFired = true;
+      event = {s.spec.key, true};
+      return true;
     }
   }
   return false;

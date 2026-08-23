@@ -31,26 +31,52 @@ task flash TARGET=heltec_v3    # téléverse + moniteur série
 
 Ou directement : `pio run -e <env>`.
 
-Avant de flasher, adapter le préfixe de clé publique du répéteur visé dans
-`src/AppConfig.h` (`kTargetPubkeyPrefix`), ainsi que le preset radio si besoin
-(par défaut : MeshCore Île-de-France, 869.618 MHz).
+Le preset radio (par défaut : MeshCore Île-de-France, 869.618 MHz) se règle
+dans `src/AppConfig.h` ; le répéteur visé s'y trouve aussi (`kTargetPubkeyPrefix`)
+mais seulement comme valeur d'usine, modifiable ensuite via le menu.
+
+## Utilisation
+
+Écran principal : RSSI du répéteur cible, SNR et ancienneté du dernier paquet.
+
+- **Ping TRACE** : appui court sur Ok (joystick sur le L1, bouton PRG sur les
+  Heltec).
+- **Menu** : bouton Menu sur le L1, appui long sur PRG sur les Heltec.
+
+Trois réglages, persistés (NVS sur ESP32, LittleFS interne sur nRF52) :
+
+- **Répéteur** : préfixe de clé publique, 4 digits hex édités un par un ;
+- **Puiss. TX** : puissance d'émission « à l'antenne », de −9 dBm au maximum
+  de la carte ;
+- **Gain RX** : `AUCUN` / `RX BOOST` (le +2 dB interne du SX126x, défaut
+  partout) / `FEM LNA` (Heltec V4.3 uniquement, exclusif du boost). Attention :
+  le LNA du FEM ajoute son gain au RSSI affiché.
+
+Navigation : sur le L1, Up/Down navigue ou modifie, Left/Right change de
+digit, Ok valide, Back annule l'édition ou sort du menu. Sur les Heltec
+(bouton unique) : clic = suivant/modifier, appui long = valider, sortie par
+l'item « Retour ». Dans les deux cas, 20 s d'inactivité referment le menu ;
+les changements sont appliqués et sauvegardés à la fermeture.
 
 ## Organisation du code
 
 ```
 src/
 ├── main.cpp          point d'entrée (délègue à App)
-├── AppConfig.h       config applicative : preset radio, répéteur cible
+├── AppConfig.h       config applicative : preset radio, défauts d'usine
 ├── app/              logique applicative (App)
 ├── mesh/             protocole MeshCore pur (parsing, TRACE) — aucune
 │                     dépendance matérielle
-├── ui/               écrans U8g2 (pilote commun SH1106/SSD1306)
+├── ui/               écrans U8g2 (pilote commun SH1106/SSD1306) :
+│                     StatusScreen + SettingsMenu
 └── hal/
     ├── Board.h       interface d'une carte : écran, brochage radio,
-    │                 boutons logiques, puissance TX défaut/max
-    ├── Radio.*       enveloppe SX1262/RadioLib (FEM, ISR, puissance)
+    │                 boutons logiques, puissance TX défaut/max, FEM
+    ├── Radio.*       enveloppe SX1262/RadioLib (FEM, ISR, puissance,
+    │                 gain RX)
     ├── Buttons.*     boutons débouncés -> touches logiques (Ok, Back,
-    │                 Up/Down/Left/Right), base du futur menu
+    │                 Up/Down/Left/Right), clic court / appui long
+    ├── Settings.*    config persistée (NVS ESP32 / LittleFS nRF52)
     ├── SysRandom.*   RNG matériel (ESP32 / nRF52)
     └── boards/       une implémentation de Board par carte
 ```

@@ -22,12 +22,22 @@ Radio::Radio(Board &board)
 
 int8_t Radio::chipPowerDbm(int8_t antennaDbm) const {
   int chip = antennaDbm - _traits.femTxGainDb;
-  return (int8_t)constrain(chip, -9, 22);  // plage du SX1262
+  return (int8_t)constrain(chip, kTxPowerMinDbm, 22);  // plage du SX1262
 }
 
 void Radio::setTxPowerDbm(int8_t antennaDbm) {
-  _antennaDbm = min(antennaDbm, _board.txPowerMaxDbm());
+  _antennaDbm =
+      (int8_t)constrain(antennaDbm, kTxPowerMinDbm, _board.txPowerMaxDbm());
   _lora.setOutputPower(chipPowerDbm(_antennaDbm));
+}
+
+void Radio::setRxGainMode(RxGainMode mode) {
+  if (mode == RxGainMode::kFemLna && !_board.hasFemLna()) {
+    mode = RxGainMode::kSxBoost;
+  }
+  _board.setFemLna(mode == RxGainMode::kFemLna);
+  _lora.setRxBoostedGainMode(mode == RxGainMode::kSxBoost);
+  startReceive();  // reapplique l'aiguillage RX du FEM
 }
 
 int16_t Radio::begin(float freqMhz, float bwKhz, uint8_t sf, uint8_t cr,
@@ -43,7 +53,8 @@ int16_t Radio::begin(float freqMhz, float bwKhz, uint8_t sf, uint8_t cr,
   SPI.begin();  // broches fixees par la variante
 #endif
 
-  _antennaDbm = min(txPowerDbm, _board.txPowerMaxDbm());
+  _antennaDbm =
+      (int8_t)constrain(txPowerDbm, kTxPowerMinDbm, _board.txPowerMaxDbm());
   int16_t state = _lora.begin(freqMhz, bwKhz, sf, cr,
                               RADIOLIB_SX126X_SYNC_WORD_PRIVATE,
                               chipPowerDbm(_antennaDbm), 8,
@@ -59,9 +70,8 @@ int16_t Radio::begin(float freqMhz, float bwKhz, uint8_t sf, uint8_t cr,
     _lora.setRfSwitchPins(_traits.pins.rxEn, _traits.pins.txEn);
   }
   _lora.setCurrentLimit(_traits.currentLimitmA);
-  if (_traits.rxBoostedGain) {
-    _lora.setRxBoostedGainMode(true);
-  }
+  // La chaine de gain RX (boost SX126x / LNA FEM) est appliquee ensuite
+  // par l'application via setRxGainMode(), selon la config persistee.
 
   _lora.setDio1Action(onDio1Isr);
   return startReceive();

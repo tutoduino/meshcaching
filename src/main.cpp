@@ -8,7 +8,6 @@
  *          l'organisation du code.
  *
  * @see     https://tutoduino.fr/menu-sdr/geolocalisation-repeteur-meshcore/
- *          (sketch d'origine, Tutoduino)
  */
 #include <Arduino.h>
 

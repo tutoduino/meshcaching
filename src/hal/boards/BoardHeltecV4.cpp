@@ -50,10 +50,11 @@ public:
     pinMode(kPinVext, OUTPUT);
     digitalWrite(kPinVext, HIGH);  // allume le rail Vext (OLED)
 
-    // Alimente puis configure le FEM. CSD haut = FEM actif ; CTX reste
-    // haut en permanence : PA dans le chemin d'emission, et LNA contourne
-    // en reception — un LNA actif fausserait le RSSI mesure, ce qui est
-    // precisement la donnee que cet appareil affiche.
+    // Alimente puis configure le FEM. CSD haut = FEM actif ; CTX haut au
+    // depart = PA dans le chemin d'emission, LNA contourne en reception.
+    // L'aiguillage RX est ensuite gere par radioRxMode() selon setFemLna().
+    // Attention si le LNA est active : son gain s'ajoute au RSSI mesure
+    // par le SX1262, precisement la donnee que cet appareil affiche.
     pinMode(kPinFemLdo, OUTPUT);
     digitalWrite(kPinFemLdo, HIGH);
     delay(1);  // temps de demarrage du FEM
@@ -64,6 +65,16 @@ public:
 
     delay(150);  // stabilisation du Vext avant l'init de l'OLED
   }
+
+  void radioTxMode() override { digitalWrite(kPinFemCtx, HIGH); }
+
+  void radioRxMode() override {
+    digitalWrite(kPinFemCtx, _femLnaEnabled ? LOW : HIGH);
+  }
+
+  bool hasFemLna() const override { return true; }
+
+  void setFemLna(bool enabled) override { _femLnaEnabled = enabled; }
 
   U8G2 &display() override { return _display; }
 
@@ -79,7 +90,6 @@ public:
     t.dio2AsRfSwitch = true;
     t.tcxoVoltage = 1.8f;
     t.currentLimitmA = 140;
-    t.rxBoostedGain = true;
     t.femTxGainDb = kFemTxGainDb;
     return t;
   }
@@ -92,6 +102,7 @@ public:
   }
 
 private:
+  bool _femLnaEnabled = false;
   U8G2_SSD1306_128X64_NONAME_F_HW_I2C _display{U8G2_R0, kPinOledReset,
                                                kPinOledScl, kPinOledSda};
 };
