@@ -27,17 +27,29 @@ void StatusScreen::showSplash(const char *version) {
 
 void StatusScreen::drawSleepLogo() {
   // "zZZ" façon émoji sommeil : trois Z croissants en diagonale montante,
-  // révélés un à un au rythme d'une respiration.
-  uint8_t phase = (millis() / 600) % 3;
-  _d.setFont(u8g2_font_6x12_tf);
-  _d.drawUTF8(42, 54, "z");
-  if (phase >= 1) {
-    _d.setFont(u8g2_font_helvB12_tr);
-    _d.drawUTF8(54, 46, "Z");
+  // serrés à un pixel d'écart. L'animation part du vide et les révèle
+  // un à un au rythme d'une respiration.
+  uint8_t phase = (millis() / 600) % 4;  // 0 = rien d'affiché
+  if (phase == 0) {
+    return;
   }
+  _d.setFont(u8g2_font_6x12_tf);
+  u8g2_uint_t wSmall = _d.getUTF8Width("z");
+  _d.setFont(u8g2_font_helvB12_tr);
+  u8g2_uint_t wMedium = _d.getUTF8Width("Z");
+  _d.setFont(u8g2_font_logisoso24_tr);
+  u8g2_uint_t wLarge = _d.getUTF8Width("Z");
+  u8g2_uint_t x = (_d.getDisplayWidth() - (wSmall + wMedium + wLarge + 2)) / 2;
+
+  _d.setFont(u8g2_font_6x12_tf);
+  _d.drawUTF8(x, 50, "z");
   if (phase >= 2) {
+    _d.setFont(u8g2_font_helvB12_tr);
+    _d.drawUTF8(x + wSmall + 1, 46, "Z");
+  }
+  if (phase >= 3) {
     _d.setFont(u8g2_font_logisoso24_tr);
-    _d.drawUTF8(70, 40, "Z");
+    _d.drawUTF8(x + wSmall + 1 + wMedium + 1, 42, "Z");
   }
 }
 
