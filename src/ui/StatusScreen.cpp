@@ -84,14 +84,18 @@ void StatusScreen::drawMain(const MainView &v) {
   _d.drawHLine(0, 13, _d.width());
 
   if (v.rssiValid) {
-    // --- RSSI en grand, centré ---
-    _d.setFont(Font::kBig);
-    snprintf(buf, sizeof(buf), "%d", (int)lroundf(v.rssi));
-    uint16_t w = _d.textWidth(buf);
-    int16_t x = (_d.width() - w) / 2;
-    _d.drawText(x, 44, buf);
+    // --- RSSI moyen (gauche) et RSSI après désétalement (droite),
+    // côte à côte, chacun centré dans sa moitié d'écran ---
+    const int16_t half = _d.width() / 2;
     _d.setFont(Font::kSmall);
-    _d.drawText(x + w + 3, 44, "dBm");
+    _d.drawText((half - _d.textWidth("RSSI")) / 2, 25, "RSSI");
+    _d.drawText(half + (half - _d.textWidth("DESPREAD")) / 2, 25, "DESPREAD");
+    _d.setFont(Font::kMenu);
+    snprintf(buf, sizeof(buf), "%d", (int)lroundf(v.rssi));
+    _d.drawText((half - _d.textWidth(buf)) / 2, 45, buf);
+    snprintf(buf, sizeof(buf), "%d", (int)lroundf(v.despreadRssi));
+    _d.drawText(half + (half - _d.textWidth(buf)) / 2, 45, buf);
+    _d.drawBox(half - 1, 17, 1, 30);  // séparateur des deux colonnes
   } else {
     drawSleepLogo();
   }

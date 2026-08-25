@@ -9,7 +9,8 @@ struct MainView {
   const uint8_t *pubkeyPrefix;   // répéteur surveillé (bandeau)
   size_t prefixLen;
   bool rssiValid;                // false : logo de sommeil à la place du RSSI
-  float rssi;
+  float rssi;                    // RssiPkt, moyenné sur le paquet
+  float despreadRssi;            // SignalRssiPkt, après désétalement
   float snr;
   bool noiseValid;               // bruit de fond mesuré (médiane) dispo ?
   float noiseDbm;

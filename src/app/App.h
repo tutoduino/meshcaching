@@ -29,7 +29,8 @@ private:
   struct RepeaterStatus {
     bool hasPacket = false;
     uint32_t lastSeenMs = 0;
-    float rssi = 0;
+    float rssi = 0;          // RssiPkt, moyenné sur le paquet
+    float despreadRssi = 0;  // SignalRssiPkt, après désétalement
     float snr = 0;
   };
 

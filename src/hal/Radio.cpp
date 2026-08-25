@@ -123,7 +123,7 @@ bool Radio::packetAvailable() {
 }
 
 int16_t Radio::readPacket(uint8_t *buf, size_t maxLen, size_t &len,
-                          float &rssi, float &snr) {
+                          float &rssi, float &snr, float &despreadRssi) {
   len = _lora.getPacketLength();
   if (len == 0 || len > maxLen) {
     len = 0;
@@ -131,7 +131,13 @@ int16_t Radio::readPacket(uint8_t *buf, size_t maxLen, size_t &len,
     return RADIOLIB_ERR_NONE;
   }
   int16_t state = _lora.readData(buf, len);
-  rssi = _lora.getRSSI();
+  // GetPacketStatus (LoRa) renvoie [RssiPkt, SnrPkt, SignalRssiPkt],
+  // rangés ici de l'octet haut vers l'octet bas. Attention : le
+  // getRSSI(paquet) de RadioLib lit l'octet bas, donc SignalRssiPkt —
+  // on décode les trois octets explicitement pour ne pas les confondre.
+  uint32_t status = _lora.getPacketStatus();
+  rssi = -0.5f * (float)((status >> 16) & 0xFF);
+  despreadRssi = -0.5f * (float)(status & 0xFF);
   snr = _lora.getSNR();
   startReceive();
   return state;

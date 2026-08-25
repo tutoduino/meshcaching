@@ -178,6 +178,7 @@ void App::refreshDisplay() {
   view.rssiValid = _target.hasPacket &&
                    now - _target.lastSeenMs < config::kRssiFreshnessMs;
   view.rssi = _target.rssi;
+  view.despreadRssi = _target.despreadRssi;
   view.snr = _target.snr;
   view.txBadge = nullptr;
   switch (_txPhase) {
@@ -309,9 +310,10 @@ bool App::packetComesFromTarget(const uint8_t *packet, size_t len) {
 void App::handleIncomingPacket() {
   uint8_t buf[meshcore::kMaxPacketLen];
   size_t len = 0;
-  float rssi = 0, snr = 0;
+  float rssi = 0, snr = 0, despreadRssi = 0;
 
-  int16_t state = _radio.readPacket(buf, sizeof(buf), len, rssi, snr);
+  int16_t state =
+      _radio.readPacket(buf, sizeof(buf), len, rssi, snr, despreadRssi);
   if (len == 0) {
     return;
   }
@@ -327,17 +329,20 @@ void App::handleIncomingPacket() {
   }
 
   bool isTarget = packetComesFromTarget(buf, len);
-  char rssiStr[16], snrStr[16];
+  char rssiStr[16], despreadStr[16], snrStr[16];
   formatDb(rssi, rssiStr, sizeof(rssiStr));
+  formatDb(despreadRssi, despreadStr, sizeof(despreadStr));
   formatDb(snr, snrStr, sizeof(snrStr));
-  Serial.printf("Paquet reçu : len=%u RSSI=%s dBm SNR=%s dB %s\n",
-                (unsigned)len, rssiStr, snrStr,
-                isTarget ? "[RÉPÉTEUR CIBLE]" : "");
+  Serial.printf(
+      "Paquet reçu : len=%u RSSI=%s dBm despread=%s dBm SNR=%s dB %s\n",
+      (unsigned)len, rssiStr, despreadStr, snrStr,
+      isTarget ? "[RÉPÉTEUR CIBLE]" : "");
 
   if (isTarget) {
     _target.hasPacket = true;
     _target.lastSeenMs = millis();
     _target.rssi = rssi;
+    _target.despreadRssi = despreadRssi;
     _target.snr = snr;
     _rxFlashStartMs = _target.lastSeenMs;  // déclenche le clignotement
     if (!_menu.isOpen()) {

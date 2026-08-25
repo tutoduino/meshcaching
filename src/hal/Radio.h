@@ -43,9 +43,11 @@ public:
   bool packetAvailable();
 
   // Lit le paquet reçu puis remet la radio en écoute. len vaut 0 si le
-  // paquet était vide ou trop grand pour buf.
-  int16_t readPacket(uint8_t *buf, size_t maxLen, size_t &len,
-                     float &rssi, float &snr);
+  // paquet était vide ou trop grand pour buf. rssi est le RssiPkt moyenné
+  // sur le paquet (bruit compris), despreadRssi le SignalRssiPkt estimé
+  // après désétalement du signal LoRa.
+  int16_t readPacket(uint8_t *buf, size_t maxLen, size_t &len, float &rssi,
+                     float &snr, float &despreadRssi);
 
   int16_t startReceive();
 
