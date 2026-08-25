@@ -82,7 +82,12 @@ public:
 
   void setInkInverted(bool inverted) override {
     _ink = inverted ? kBlack : kWhite;
+    // Texte inversé rendu en mode "plein" : la lib peint elle-même le
+    // fond blanc du glyphe puis ses pixels noirs, au lieu du mode
+    // transparent par-dessus la boîte déjà remplie.
+    _fonts.setFontMode(inverted ? 0 : 1);
     _fonts.setForegroundColor(_ink);
+    _fonts.setBackgroundColor(inverted ? kWhite : kBlack);
   }
   void invertFrame() override {
     uint16_t *pixels = _canvas.getBuffer();
