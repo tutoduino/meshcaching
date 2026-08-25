@@ -1,7 +1,8 @@
 #pragma once
 #include <Arduino.h>
 #include <RadioLib.h>
-#include <U8g2lib.h>
+
+#include "Display.h"
 
 // =====================================================================
 // Description abstraite d'une carte supportée.
@@ -62,15 +63,11 @@ public:
   // Appelé avant tout accès I2C/SPI.
   virtual void initPower() {}
 
-  // Écran U8g2 de la carte, construit mais pas initialisé.
-  virtual U8G2 &display() = 0;
+  // Écran de la carte (cf. hal/Display.h), construit mais pas initialisé.
+  virtual Display &display() = 0;
   // Démarre l'écran ; à surcharger si l'init sort de l'ordinaire
-  // (sondage d'adresse I2C, etc.). I2C à 400 kHz : une trame complète
-  // passe en ~25 ms, nécessaire aux animations de l'écran principal.
-  virtual void beginDisplay() {
-    display().setBusClock(400000);
-    display().begin();
-  }
+  // (sondage d'adresse I2C, réglage de contraste, etc.)
+  virtual void beginDisplay() { display().begin(); }
 
   virtual RadioTraits radio() const = 0;
 

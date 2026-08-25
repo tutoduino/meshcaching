@@ -17,7 +17,10 @@
 // bloque le démarrage. Les déclinaisons TFT et e-ink ne sont pas gérées
 // non plus.
 // =====================================================================
+#include <U8g2lib.h>
+
 #include "../Board.h"
+#include "../U8g2Display.h"
 
 namespace {
 
@@ -111,12 +114,11 @@ public:
 
   void setFemLna(bool enabled) override { _femLnaEnabled = enabled; }
 
-  U8G2 &display() override { return _display; }
+  Display &display() override { return _display; }
 
   void beginDisplay() override {
-    _display.setBusClock(400000);
     _display.begin();
-    _display.setContrast(255);
+    _u8g2.setContrast(255);
   }
 
   RadioTraits radio() const override {
@@ -148,8 +150,9 @@ public:
 private:
   const char *_selfCheckError = nullptr;
   bool _femLnaEnabled = false;
-  U8G2_SSD1306_128X64_NONAME_F_HW_I2C _display{U8G2_R0, kPinOledReset,
-                                               kPinOledScl, kPinOledSda};
+  U8G2_SSD1306_128X64_NONAME_F_HW_I2C _u8g2{U8G2_R0, kPinOledReset,
+                                            kPinOledScl, kPinOledSda};
+  U8g2Display _display{_u8g2};
 };
 
 }  // namespace

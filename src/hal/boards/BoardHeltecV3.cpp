@@ -3,7 +3,10 @@
 // Heltec WiFi LoRa 32 V3 — ESP32-S3 + SX1262, OLED SSD1306 128x64 (I2C),
 // un seul bouton utilisateur (PRG).
 // =====================================================================
+#include <U8g2lib.h>
+
 #include "../Board.h"
+#include "../U8g2Display.h"
 
 namespace {
 
@@ -35,7 +38,7 @@ public:
     delay(150);
   }
 
-  U8G2 &display() override { return _display; }
+  Display &display() override { return _display; }
 
   RadioTraits radio() const override {
     RadioTraits t;
@@ -61,8 +64,9 @@ public:
 
 private:
   // Le reset matériel de l'OLED (broche 21) est géré par U8g2 au begin()
-  U8G2_SSD1306_128X64_NONAME_F_HW_I2C _display{U8G2_R0, kPinOledReset,
-                                               kPinOledScl, kPinOledSda};
+  U8G2_SSD1306_128X64_NONAME_F_HW_I2C _u8g2{U8G2_R0, kPinOledReset,
+                                            kPinOledScl, kPinOledSda};
+  U8g2Display _display{_u8g2};
 };
 
 }  // namespace

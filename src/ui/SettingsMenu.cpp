@@ -7,7 +7,7 @@ namespace {
 const char kHexDigits[] = "0123456789ABCDEF";
 }
 
-SettingsMenu::SettingsMenu(U8G2 &display, Board &board)
+SettingsMenu::SettingsMenu(Display &display, Board &board)
     : _d(display), _board(board), _hasDpad(false) {
   size_t count = 0;
   const ButtonSpec *specs = board.buttons(count);
@@ -233,58 +233,58 @@ const char *SettingsMenu::rxGainLabel(RxGainMode mode) {
 // ---------------------------------------------------------------------
 
 void SettingsMenu::drawTitle(const char *title) {
-  _d.setFont(u8g2_font_6x12_tf);
-  _d.drawUTF8(0, 10, title);
-  _d.drawHLine(0, 13, _d.getDisplayWidth());
+  _d.setFont(Font::kSmall);
+  _d.drawText(0, 10, title);
+  _d.drawHLine(0, 13, _d.width());
 }
 
 void SettingsMenu::drawHint(const char *dpadHint,
                             const char *singleButtonHint) {
-  _d.setFont(u8g2_font_6x12_tf);
-  _d.drawUTF8(0, 63, _hasDpad ? dpadHint : singleButtonHint);
+  _d.setFont(Font::kSmall);
+  _d.drawText(0, 63, _hasDpad ? dpadHint : singleButtonHint);
 }
 
-void SettingsMenu::drawRightAligned(u8g2_uint_t y, const char *text) {
-  _d.drawUTF8(_d.getDisplayWidth() - _d.getUTF8Width(text), y, text);
+void SettingsMenu::drawRightAligned(int16_t y, const char *text) {
+  _d.drawText(_d.width() - _d.textWidth(text), y, text);
 }
 
 void SettingsMenu::draw() {
-  _d.clearBuffer();
+  _d.clear();
   switch (_mode) {
     case Mode::Nav: drawNav(); break;
     case Mode::EditTarget: drawEditTarget(); break;
     case Mode::EditTxPower: drawEditTxPower(); break;
     case Mode::EditRxGain: drawEditRxGain(); break;
   }
-  _d.sendBuffer();
+  _d.send();
 }
 
 void SettingsMenu::drawNav() {
   drawTitle("RÉGLAGES");
   char value[12];
   for (uint8_t i = 0; i < kItemCount; i++) {
-    u8g2_uint_t y = 26 + i * 12;
+    int16_t y = 26 + i * 12;
     if (i == _cursor) {
-      _d.drawUTF8(0, y, ">");
+      _d.drawText(0, y, ">");
     }
     switch ((Item)i) {
       case Item::Target:
-        _d.drawUTF8(8, y, "Répéteur");
+        _d.drawText(8, y, "Répéteur");
         snprintf(value, sizeof(value), "%02X%02X", _settings.targetPrefix[0],
                  _settings.targetPrefix[1]);
         drawRightAligned(y, value);
         break;
       case Item::TxPower:
-        _d.drawUTF8(8, y, "Puiss. TX");
+        _d.drawText(8, y, "Puiss. TX");
         snprintf(value, sizeof(value), "%ddBm", _settings.txPowerDbm);
         drawRightAligned(y, value);
         break;
       case Item::RxGain:
-        _d.drawUTF8(8, y, "Gain RX");
+        _d.drawText(8, y, "Gain RX");
         drawRightAligned(y, rxGainLabel(_settings.rxGainMode));
         break;
       case Item::Back:
-        _d.drawUTF8(8, y, "Retour");
+        _d.drawText(8, y, "Retour");
         break;
     }
   }
@@ -292,12 +292,12 @@ void SettingsMenu::drawNav() {
 
 void SettingsMenu::drawEditTarget() {
   drawTitle("Répéteur cible");
-  _d.setFont(u8g2_font_logisoso24_tr);
-  u8g2_uint_t pitch = _d.getUTF8Width("0") + 6;
-  u8g2_uint_t x0 = (_d.getDisplayWidth() - kTargetDigits * pitch + 6) / 2;
+  _d.setFont(Font::kBig);
+  int16_t pitch = _d.textWidth("0") + 6;
+  int16_t x0 = (_d.width() - kTargetDigits * pitch + 6) / 2;
   for (uint8_t i = 0; i < kTargetDigits; i++) {
     char digit[2] = {kHexDigits[nibble(i)], '\0'};
-    _d.drawUTF8(x0 + i * pitch, 45, digit);
+    _d.drawText(x0 + i * pitch, 45, digit);
   }
   // Soulignement du digit en cours d'édition
   _d.drawBox(x0 + _digit * pitch, 49, pitch - 6, 2);
@@ -308,19 +308,19 @@ void SettingsMenu::drawEditTxPower() {
   drawTitle("Puissance TX");
   char value[8];
   snprintf(value, sizeof(value), "%d", _settings.txPowerDbm);
-  _d.setFont(u8g2_font_logisoso24_tr);
-  u8g2_uint_t w = _d.getUTF8Width(value);
-  u8g2_uint_t x = (_d.getDisplayWidth() - w) / 2;
-  _d.drawUTF8(x, 45, value);
-  _d.setFont(u8g2_font_6x12_tf);
-  _d.drawUTF8(x + w + 3, 45, "dBm");
+  _d.setFont(Font::kBig);
+  int16_t w = _d.textWidth(value);
+  int16_t x = (_d.width() - w) / 2;
+  _d.drawText(x, 45, value);
+  _d.setFont(Font::kSmall);
+  _d.drawText(x + w + 3, 45, "dBm");
   drawHint("OK: valider", "clic: -1  long: OK");
 }
 
 void SettingsMenu::drawEditRxGain() {
   drawTitle("Gain RX");
   const char *label = rxGainLabel(_settings.rxGainMode);
-  _d.setFont(u8g2_font_10x20_tf);
-  _d.drawUTF8((_d.getDisplayWidth() - _d.getUTF8Width(label)) / 2, 42, label);
+  _d.setFont(Font::kMenu);
+  _d.drawText((_d.width() - _d.textWidth(label)) / 2, 42, label);
   drawHint("OK: valider", "clic: suivant  long: OK");
 }

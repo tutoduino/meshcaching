@@ -7,9 +7,11 @@
 // variants/Seeed_Wio_Tracker_L1/variant.h, repris du firmware MeshCore.
 // SPI et I2C utilisent les bus par défaut fixes par la variante.
 // =====================================================================
+#include <U8g2lib.h>
 #include <Wire.h>
 
 #include "../Board.h"
+#include "../U8g2Display.h"
 
 namespace {
 
@@ -31,7 +33,7 @@ public:
   // Pas de rail Vext ni de reset dédié : l'écran est alimenté en
   // permanence, initPower() par défaut (vide) suffit.
 
-  U8G2 &display() override { return _display; }
+  Display &display() override { return _display; }
 
   void beginDisplay() override {
     // Adresse nominale 0x3D (cf. variant.h) ; certains modules SH1106
@@ -42,8 +44,7 @@ public:
     if (Wire.endTransmission() != 0) {
       addr = 0x3C;
     }
-    _display.setI2CAddress(addr << 1);  // U8g2 attend l'adresse 8 bits
-    _display.setBusClock(400000);
+    _u8g2.setI2CAddress(addr << 1);  // U8g2 attend l'adresse 8 bits
     _display.begin();
   }
 
@@ -72,7 +73,8 @@ public:
   }
 
 private:
-  U8G2_SH1106_128X64_NONAME_F_HW_I2C _display{U8G2_R0, U8X8_PIN_NONE};
+  U8G2_SH1106_128X64_NONAME_F_HW_I2C _u8g2{U8G2_R0, U8X8_PIN_NONE};
+  U8g2Display _display{_u8g2};
 };
 
 }  // namespace

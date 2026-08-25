@@ -7,7 +7,9 @@ Définitions de cartes reprises du firmware MeshCore
   `variants/heltec_v4/pins_arduino.h` (le brochage LoRa/FEM/OLED utilisé dans
   `src/hal/boards/BoardHeltecV4.cpp` en est également repris) ;
 - Heltec WiFi LoRa 32 V4 R8 : `boards/heltec_v4_r8.json` et
-  `variants/heltec_v4_r8/pins_arduino.h`.
+  `variants/heltec_v4_r8/pins_arduino.h` ;
+- Heltec T096 : `boards/heltec_t096.json`, `boards/nrf52840_s140_v6.ld`
+  et `variants/Heltec_T096_Board/variant.{h,cpp}`.
 
 Le Heltec V3 utilise la définition `heltec_wifi_lora_32_V3` fournie par la
 plateforme PlatformIO `espressif32`, rien à embarquer ici.

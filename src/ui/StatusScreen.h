@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <U8g2lib.h>
+#include "../hal/Display.h"
 
 // État à afficher sur l'écran principal, composé par l'application.
 struct MainView {
@@ -20,11 +20,11 @@ struct MainView {
   uint32_t cooldownTotalMs;
 };
 
-// Écrans de l'application, dessinés avec U8g2 (pilote commun aux OLED
-// SH1106 / SSD1306 des différentes cartes).
+// Écrans de l'application, dessinés via l'abstraction Display (OLED
+// U8g2 ou TFT selon la carte).
 class StatusScreen {
 public:
-  explicit StatusScreen(U8G2 &display) : _d(display) {}
+  explicit StatusScreen(Display &display) : _d(display) {}
 
   void showMessage(const char *line1, const char *line2 = "");
 
@@ -38,5 +38,5 @@ public:
 private:
   void drawSleepLogo();
 
-  U8G2 &_d;
+  Display &_d;
 };

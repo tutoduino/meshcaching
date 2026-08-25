@@ -1,5 +1,5 @@
 #pragma once
-#include <U8g2lib.h>
+#include "../hal/Display.h"
 
 #include "../hal/Board.h"
 #include "../hal/Buttons.h"
@@ -21,7 +21,7 @@
 // =====================================================================
 class SettingsMenu {
 public:
-  SettingsMenu(U8G2 &display, Board &board);
+  SettingsMenu(Display &display, Board &board);
 
   void open(const AppSettings &current);
   bool isOpen() const { return _open; }
@@ -57,9 +57,9 @@ private:
   void drawEditRxGain();
   void drawTitle(const char *title);
   void drawHint(const char *dpadHint, const char *singleButtonHint);
-  void drawRightAligned(u8g2_uint_t y, const char *text);
+  void drawRightAligned(int16_t y, const char *text);
 
-  U8G2 &_d;
+  Display &_d;
   Board &_board;
   bool _hasDpad;
 
