@@ -54,12 +54,15 @@ mais seulement comme valeur d'usine, modifiable ensuite via le menu.
 
 ## Utilisation
 
-Écran principal : RSSI du répéteur cible en grand (avec SNR) tant qu'un
-paquet a été reçu il y a moins de 5 s ; au-delà, un logo de sommeil (zZZ)
-reprend la place. L'écran clignote (inversion) quand une réponse valide
-rafraîchit le RSSI, et une barre décroissante en bas indique le réarmement
-de l'émission (au plus un ping toutes les 5 s — les deux durées de 5 s sont
-des constantes indépendantes dans `src/AppConfig.h`).
+Écran principal : les deux mesures de signal du répéteur cible — le RSSI
+moyenné sur le paquet et le RSSI du despreader (`SignalRssiPkt`, estimé
+après désétalement du signal LoRa) — côte à côte, avec le SNR en dessous.
+La dernière mesure reste affichée jusqu'à la suivante ; un logo de sommeil
+(zZZ) occupe l'écran tant que rien n'a encore été reçu. L'écran clignote
+(inversion) quand une réponse valide rafraîchit les mesures, et une barre
+en bas indique le réarmement de l'émission (au plus un ping toutes les
+5 s) : pleine dès l'ordre d'émission, gelée pendant le LBT, décroissante
+après l'émission réelle — et absente si le LBT a abandonné.
 
 L'émission est précédée d'un LBT (écoute du canal par CAD) : essais espacés
 de slots aléatoires courts pendant 4 s au plus, puis abandon — pas de TX
@@ -73,14 +76,16 @@ paquet est centré sous le RSSI.
   Heltec).
 - **Menu** : bouton Menu sur le L1, appui long sur PRG sur les Heltec.
 
-Trois réglages, persistés (NVS sur ESP32, LittleFS interne sur nRF52) :
+Quatre réglages, persistés (NVS sur ESP32, LittleFS interne sur nRF52) :
 
 - **Répéteur** : préfixe de clé publique, 4 digits hex édités un par un ;
-- **Puiss. TX** : puissance d'émission « à l'antenne », de −9 dBm au maximum
-  de la carte ;
+- **Puiss. TX** : puissance d'émission « à l'antenne », du plancher utile de
+  la carte à son maximum ;
 - **Gain RX** : `AUCUN` / `RX BOOST` (le +2 dB interne du SX126x, défaut
   partout) / `FEM LNA` (cartes à FEM : Heltec V4 et T096, exclusif du boost).
-  Attention : le LNA du FEM ajoute son gain au RSSI affiché.
+  Attention : le LNA du FEM ajoute son gain au RSSI affiché ;
+- **Affichage** : `R+D` (les deux mesures côte à côte, défaut) / `RSSI` /
+  `DESPREAD` (une seule, en grand).
 
 Navigation : sur le L1, Up/Down navigue ou modifie, Left/Right change de
 digit, Ok valide, Back annule l'édition ou sort du menu. Sur les Heltec
