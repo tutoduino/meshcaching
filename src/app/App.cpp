@@ -121,8 +121,8 @@ void App::loop() {
     _noise.addSample(_radio.rssiInstant());
   }
 
-  // Rafraîchit l'écran principal (animations, barre de réarmement,
-  // péremption du RSSI) — jamais par-dessus le menu
+  // Rafraîchit l'écran principal (animations, barre de réarmement) —
+  // jamais par-dessus le menu
   if (!_menu.isOpen() &&
       millis() - _lastDisplayRefreshMs >= config::kDisplayRefreshMs) {
     _lastDisplayRefreshMs = millis();
@@ -175,8 +175,9 @@ void App::refreshDisplay() {
   MainView view;
   view.pubkeyPrefix = _settings.targetPrefix;
   view.prefixLen = sizeof(_settings.targetPrefix);
-  view.rssiValid = _target.hasPacket &&
-                   now - _target.lastSeenMs < config::kRssiFreshnessMs;
+  // Les dernières valeurs restent affichées jusqu'au paquet suivant ;
+  // le logo de sommeil n'apparaît qu'avant la toute première réception.
+  view.rssiValid = _target.hasPacket;
   view.rssi = _target.rssi;
   view.despreadRssi = _target.despreadRssi;
   view.snr = _target.snr;

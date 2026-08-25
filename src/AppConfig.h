@@ -30,12 +30,7 @@ constexpr uint8_t kTargetPubkeyPrefix[] = { 0x57, 0xDB };
 // On n'accepte une réponse TRACE que dans les 10 s suivant notre ping
 constexpr uint32_t kTraceReplyTimeoutMs = 10000;
 
-// Fraîcheur du RSSI affiché : sans nouveau paquet du répéteur au-delà
-// de ce délai, l'écran principal retourne au logo de scan.
-constexpr uint32_t kRssiFreshnessMs = 5000;
-
-// Délai minimal entre deux émissions TRACE. Volontairement distinct de
-// kRssiFreshnessMs : les deux durées se règlent indépendamment.
+// Délai minimal entre deux émissions TRACE
 constexpr uint32_t kTxCooldownMs = 5000;
 
 // Durée d'affichage du témoin d'émission "TX"
