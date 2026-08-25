@@ -213,9 +213,16 @@ void App::refreshDisplay() {
   view.invert = _target.hasPacket && now - _rxFlashStartMs < config::kRxFlashMs;
   uint32_t sincePing = now - _lastPingMs;
   view.cooldownTotalMs = config::kTxCooldownMs;
-  view.cooldownRemainingMs = (_hasPinged && sincePing < config::kTxCooldownMs)
-                                 ? config::kTxCooldownMs - sincePing
-                                 : 0;
+  if (_txPhase == TxPhase::Lbt) {
+    // Barre pleine dès l'ordre d'émission et gelée pendant le LBT ; la
+    // décroissance ne démarre qu'à l'émission réelle (ancre _lastPingMs,
+    // posée après le LBT). Un abandon ne l'arme pas : elle disparaît.
+    view.cooldownRemainingMs = config::kTxCooldownMs;
+  } else {
+    view.cooldownRemainingMs = (_hasPinged && sincePing < config::kTxCooldownMs)
+                                   ? config::kTxCooldownMs - sincePing
+                                   : 0;
+  }
   _screen.drawMain(view);
 }
 
