@@ -30,6 +30,7 @@ void App::loadSettings() {
            sizeof(_settings.targetPrefix));
     _settings.txPowerDbm = _board.txPowerDefaultDbm();
     _settings.rxGainMode = RxGainMode::kSxBoost;
+    _settings.rssiDisplay = RssiDisplayMode::kBoth;
   }
   // Garde-fous, notamment si la config vient d'une autre carte
   if (_settings.txPowerDbm > _board.txPowerMaxDbm()) {
@@ -40,6 +41,9 @@ void App::loadSettings() {
   }
   if (_settings.rxGainMode == RxGainMode::kFemLna && !_board.hasFemLna()) {
     _settings.rxGainMode = RxGainMode::kSxBoost;
+  }
+  if ((uint8_t)_settings.rssiDisplay > (uint8_t)RssiDisplayMode::kDespreadOnly) {
+    _settings.rssiDisplay = RssiDisplayMode::kBoth;
   }
 }
 
@@ -180,6 +184,7 @@ void App::refreshDisplay() {
   view.rssiValid = _target.hasPacket;
   view.rssi = _target.rssi;
   view.despreadRssi = _target.despreadRssi;
+  view.rssiDisplay = _settings.rssiDisplay;
   view.snr = _target.snr;
   view.txBadge = nullptr;
   switch (_txPhase) {

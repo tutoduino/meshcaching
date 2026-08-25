@@ -32,9 +32,15 @@ public:
 
 private:
   enum class Action : uint8_t { None, Up, Down, Left, Right, Select, Exit };
-  enum class Item : uint8_t { Target, TxPower, RxGain, Back };
-  static constexpr uint8_t kItemCount = 4;
-  enum class Mode : uint8_t { Nav, EditTarget, EditTxPower, EditRxGain };
+  enum class Item : uint8_t { Target, TxPower, RxGain, RssiDisplay, Back };
+  static constexpr uint8_t kItemCount = 5;
+  enum class Mode : uint8_t {
+    Nav,
+    EditTarget,
+    EditTxPower,
+    EditRxGain,
+    EditRssiDisplay,
+  };
 
   static constexpr uint32_t kTimeoutMs = 20000;
   static constexpr uint8_t kTargetDigits = 4;
@@ -44,17 +50,20 @@ private:
   void handleEditTarget(Action action);
   void handleEditTxPower(Action action);
   void handleEditRxGain(Action action);
+  void handleEditRssiDisplay(Action action);
 
   uint8_t nibble(uint8_t index) const;
   void setNibble(uint8_t index, uint8_t value);
   uint8_t rxGainChoices(RxGainMode out[3]) const;
   static const char *rxGainLabel(RxGainMode mode);
+  static const char *rssiDisplayLabel(RssiDisplayMode mode);
 
   void draw();
   void drawNav();
   void drawEditTarget();
   void drawEditTxPower();
   void drawEditRxGain();
+  void drawEditRssiDisplay();
   void drawTitle(const char *title);
   void drawHint(const char *dpadHint, const char *singleButtonHint);
   void drawRightAligned(int16_t y, const char *text);

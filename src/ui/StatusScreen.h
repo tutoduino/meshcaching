@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include "../hal/Display.h"
+#include "../hal/Settings.h"
 
 // État à afficher sur l'écran principal, composé par l'application.
 struct MainView {
@@ -11,6 +12,7 @@ struct MainView {
   bool rssiValid;                // false : logo de sommeil à la place du RSSI
   float rssi;                    // RssiPkt, moyenné sur le paquet
   float despreadRssi;            // SignalRssiPkt, après désétalement
+  RssiDisplayMode rssiDisplay;   // les deux côte à côte, ou une seule en grand
   float snr;
   bool noiseValid;               // bruit de fond mesuré (médiane) dispo ?
   float noiseDbm;

@@ -4,7 +4,7 @@
 
 namespace {
 
-constexpr uint16_t kSettingsVersion = 1;
+constexpr uint16_t kSettingsVersion = 2;
 
 // Représentation stockée, versionnée : toute évolution du format passe
 // par une incrémentation de version (les anciennes données sont alors
@@ -14,6 +14,7 @@ struct StoredSettings {
   uint8_t targetPrefix[2];
   int8_t txPowerDbm;
   uint8_t rxGainMode;
+  uint8_t rssiDisplay;
 } __attribute__((packed));
 
 void pack(const AppSettings &s, StoredSettings &out) {
@@ -21,6 +22,7 @@ void pack(const AppSettings &s, StoredSettings &out) {
   memcpy(out.targetPrefix, s.targetPrefix, sizeof(out.targetPrefix));
   out.txPowerDbm = s.txPowerDbm;
   out.rxGainMode = (uint8_t)s.rxGainMode;
+  out.rssiDisplay = (uint8_t)s.rssiDisplay;
 }
 
 bool unpack(const StoredSettings &in, AppSettings &out) {
@@ -30,6 +32,7 @@ bool unpack(const StoredSettings &in, AppSettings &out) {
   memcpy(out.targetPrefix, in.targetPrefix, sizeof(out.targetPrefix));
   out.txPowerDbm = in.txPowerDbm;
   out.rxGainMode = (RxGainMode)in.rxGainMode;
+  out.rssiDisplay = (RssiDisplayMode)in.rssiDisplay;
   return true;
 }
 
@@ -37,7 +40,8 @@ bool unpack(const StoredSettings &in, AppSettings &out) {
 
 bool settingsEqual(const AppSettings &a, const AppSettings &b) {
   return memcmp(a.targetPrefix, b.targetPrefix, sizeof(a.targetPrefix)) == 0 &&
-         a.txPowerDbm == b.txPowerDbm && a.rxGainMode == b.rxGainMode;
+         a.txPowerDbm == b.txPowerDbm && a.rxGainMode == b.rxGainMode &&
+         a.rssiDisplay == b.rssiDisplay;
 }
 
 #if defined(ESP32)

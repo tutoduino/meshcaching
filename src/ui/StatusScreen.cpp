@@ -83,7 +83,7 @@ void StatusScreen::drawMain(const MainView &v) {
   }
   _d.drawHLine(0, 13, _d.width());
 
-  if (v.rssiValid) {
+  if (v.rssiValid && v.rssiDisplay == RssiDisplayMode::kBoth) {
     // --- RSSI moyen (gauche) et RSSI après désétalement (droite),
     // côte à côte, chacun centré dans sa moitié d'écran ---
     const int16_t half = _d.width() / 2;
@@ -96,6 +96,18 @@ void StatusScreen::drawMain(const MainView &v) {
     snprintf(buf, sizeof(buf), "%d", (int)lroundf(v.despreadRssi));
     _d.drawText(half + (half - _d.textWidth(buf)) / 2, 45, buf);
     _d.drawBox(half - 1, 17, 1, 30);  // séparateur des deux colonnes
+  } else if (v.rssiValid) {
+    // --- Une seule valeur, en grand et sans titre : focus sur elle ---
+    float value = v.rssiDisplay == RssiDisplayMode::kDespreadOnly
+                      ? v.despreadRssi
+                      : v.rssi;
+    _d.setFont(Font::kBig);
+    snprintf(buf, sizeof(buf), "%d", (int)lroundf(value));
+    uint16_t w = _d.textWidth(buf);
+    int16_t x = (_d.width() - w) / 2;
+    _d.drawText(x, 44, buf);
+    _d.setFont(Font::kSmall);
+    _d.drawText(x + w + 3, 44, "dBm");
   } else {
     drawSleepLogo();
   }
