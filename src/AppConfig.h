@@ -14,7 +14,7 @@
 namespace config {
 
 // Durée de l'écran de démarrage (MESHCACHING + version)
-constexpr uint32_t kSplashMs = 4000;
+constexpr uint32_t kSplashMs = 3000;
 
 // --- Paramètres radio : preset MeshCore Île-de-France ---
 constexpr float kLoraFreqMhz = 869.618f;
