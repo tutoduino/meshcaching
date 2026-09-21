@@ -7,8 +7,11 @@ namespace {
 const char kHexDigits[] = "0123456789ABCDEF";
 }
 
+// Initializes the settings menu. The UI layout and navigation mode
+// (single-button cyclical vs. multi-button directional) are determined
+// dynamically by the board's D-pad capabilities.
 SettingsMenu::SettingsMenu(Display &display, Board &board)
-    : _d(display), _board(board), _hasDpad(false) {
+    : _d(display), _board(board), _hasDpad(board.hasDpad()) {
   size_t count = 0;
   const ButtonSpec *specs = board.buttons(count);
   for (size_t i = 0; i < count; i++) {

@@ -103,8 +103,19 @@ void App::setup() {
 }
 
 void App::loop() {
+
+  // Poll standard GPIO buttons first. If no standard button event occurred,
+  // fall back to the board's advanced input polling (e.g., trackball, I2C keyboard).
   ButtonEvent event;
-  if (_buttons.poll(event)) {
+  bool haveEvent = _buttons.poll(event);
+  if (!haveEvent) {
+    InputEvent input;
+    if (_board.pollInput(input)) {
+      event = {input.key, input.longPress};
+      haveEvent = true;
+    }
+  }
+  if (haveEvent) {
     if (_menu.isOpen()) {
       if (_menu.handleEvent(event)) {
         applyMenuResult();

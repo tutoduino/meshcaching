@@ -25,6 +25,11 @@ struct ButtonSpec {
   bool internalPullup;  // false if the board already has its pull-up
 };
 
+struct InputEvent {
+  Key key;
+  bool longPress;
+};
+
 struct RadioPins {
   uint32_t nss = RADIOLIB_NC;
   uint32_t dio1 = RADIOLIB_NC;
@@ -99,6 +104,26 @@ public:
   virtual const char *selfCheckError() const { return nullptr; }
 
   virtual const ButtonSpec *buttons(size_t &count) const = 0;
+
+  // Indicates whether the board features a directional pad, trackball,
+  // or keyboard capable of UP/DOWN navigation. The UI uses this to adapt
+  // its layout (e.g., single-button vs. multi-button menu navigation).
+  // By default, it checks if Key::Up is mapped in buttons(). Boards with
+  // custom input polling (like trackballs) should override this to return true.
+  virtual bool hasDpad() const {
+    size_t count = 0;
+    const ButtonSpec *specs = buttons(count);
+    for (size_t i = 0; i < count; i++) {
+      if (specs[i].key == Key::Up) return true;
+    }
+    return false;
+  }
+
+  // Extension point for complex input devices that cannot be handled by simple
+  // GPIO interrupts/polling (e.g., I2C keyboards or trackball step counting).
+  // Called on every loop iteration. Returns true and populates 'event' if an
+  // input occurred. Existing boards using standard buttons can ignore this.
+  virtual bool pollInput(InputEvent & /*event*/) { return false; }
 };
 
 // Implemented by the single src/hal/boards/*.cpp built for the target.
