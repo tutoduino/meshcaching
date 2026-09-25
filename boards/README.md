@@ -13,7 +13,9 @@ Définitions de cartes reprises du firmware MeshCore
 - LilyGo T-Beam Supreme (SX1262) : `boards/lilygo_tbeam_supreme.json` (le
   brochage LoRa / I2C et l'affectation des rails du PMU AXP2101 utilisés dans
   `src/hal/boards/BoardTBeamSupreme.cpp` en sont également repris, recoupés
-  avec les exemples LilyGo-LoRa-Series).
+  avec les exemples LilyGo-LoRa-Series) ;
+- LilyGo T-Deck : `boards/t-deck.json` (brochage repris de
+  `variants/lilygo_tdeck`, recoupé avec Meshtastic).
 
 Le Heltec V3 utilise la définition `heltec_wifi_lora_32_V3` fournie par la
 plateforme PlatformIO `espressif32`, rien à embarquer ici.

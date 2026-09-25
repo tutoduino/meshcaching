@@ -20,6 +20,7 @@ de Tutoduino, préconisé pour l'évènement
 | `heltec_v4_r8`   | Heltec WiFi LoRa 32 V4 « R8 »  | ESP32-S3R8 | SX1262 + FEM     | SSD1306 128×64 | 1 bouton (PRG)   | 20 / 20 dBm     |
 | `heltec_t096`    | Heltec T096                    | nRF52840   | SX1262 + FEM     | ST7735 160×80  | 1 bouton         | 22 / 22 dBm     |
 | `tbeam_supreme`  | LilyGo T-Beam Supreme (868)    | ESP32-S3   | SX1262           | SH1106 128×64  | 1 bouton         | 22 / 22 dBm     |
+| `tdeck`          | LilyGo T-Deck / T-Deck Plus    | ESP32-S3   | SX1262           | ST7789 320×240 | trackball + clavier | 22 / 22 dBm  |
 
 Sur les cartes à FEM (V4.3, V4 R8, T096), la puissance est exprimée « à
 l'antenne » : le gain du KCT8103L en émission (~12 dB sur les V4, ~13 dB sur
@@ -35,6 +36,11 @@ firmware n'allume que ces rails (GNSS, carte SD et connecteurs restent
 éteints) et règle la charge de la 18650 à 500 mA. Le bouton PWR du PMU
 éteint l'appareil (appui de 4 s) ; le bouton utilisateur est celui du
 milieu (GPIO0).
+
+Sur le T-Deck, l'écran 128×64 de l'application est agrandi 2× au centre du
+TFT. Le trackball sert de croix directionnelle (son clic = Ok) et le
+clavier complète : Entrée ou Espace = Ok, Retour arrière = Back. Sans
+clavier détecté au démarrage, le trackball seul suffit.
 
 ## Flasher une release
 
@@ -85,10 +91,10 @@ surveillé (« RPT ») et le bruit de fond (« NF », médiane de 64 lectures de
 RSSI instantané, évaluation continue et non intrusive) ; le SNR du dernier
 paquet est centré sous le RSSI.
 
-- **Ping TRACE** : appui court sur Ok (joystick sur le L1, bouton PRG sur les
-  Heltec, bouton du milieu sur le T-Beam).
-- **Menu** : bouton Menu sur le L1, appui long sur le bouton unique des
-  Heltec et du T-Beam.
+- **Ping TRACE** : appui court sur Ok (joystick sur le L1, clic du trackball
+  sur le T-Deck, bouton PRG sur les Heltec, bouton du milieu sur le T-Beam).
+- **Menu** : bouton Menu sur le L1, appui long sur Ok sur les autres cartes
+  (bouton unique des Heltec et du T-Beam, clic du trackball sur le T-Deck).
 
 Quatre réglages, persistés (NVS sur ESP32, LittleFS interne sur nRF52) :
 
@@ -101,9 +107,9 @@ Quatre réglages, persistés (NVS sur ESP32, LittleFS interne sur nRF52) :
 - **Affichage** : `RSSI` (défaut) / `DESPREAD`, une seule mesure en grand,
   ou `R+D` pour les deux côte à côte.
 
-Navigation : sur le L1, Up/Down navigue ou modifie, Left/Right change de
-digit, Ok valide, Back annule l'édition ou sort du menu. Sur les Heltec
-(bouton unique) : clic = suivant/modifier, appui long = valider, sortie par
+Navigation : sur le L1 et le T-Deck, Up/Down navigue ou modifie, Left/Right
+change de digit, Ok valide, Back annule l'édition ou sort du menu. Sur les
+cartes à bouton unique (Heltec, T-Beam) : clic = suivant/modifier, appui long = valider, sortie par
 l'item « Retour ». Dans les deux cas, 20 s d'inactivité referment le menu ;
 les changements sont appliqués et sauvegardés à la fermeture.
 
