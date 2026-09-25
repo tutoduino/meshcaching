@@ -29,8 +29,12 @@ void StatusScreen::showSplash(const char *version) {
 void StatusScreen::drawSleepLogo() {
   // "zZZ" like a sleep emoji: three growing Z's on a rising diagonal,
   // packed one pixel apart. The animation starts from nothing and
-  // reveals them one by one at a breathing pace.
-  uint8_t phase = (millis() / 600) % 4;  // 0 = nothing shown
+  // reveals them one by one at a breathing pace - except on slow panels
+  // (e-ink), where the logo is simply drawn complete.
+  uint8_t phase = 3;
+  if (_d.minFrameIntervalMs() == 0) {
+    phase = (millis() / 600) % 4;  // 0 = nothing shown
+  }
   if (phase == 0) {
     return;
   }
@@ -128,8 +132,9 @@ void StatusScreen::drawMain(const MainView &v) {
     _d.drawBox(0, 61, barWidth, 3);
   }
 
-  // --- Valid reply received: blink by inverting the frame ---
-  if (v.invert) {
+  // --- Valid reply received: blink by inverting the frame (pointless
+  // on a slow panel: a refresh would only catch it by chance) ---
+  if (v.invert && _d.minFrameIntervalMs() == 0) {
     _d.invertFrame();
   }
 
