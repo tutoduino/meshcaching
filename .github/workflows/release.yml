@@ -58,6 +58,7 @@ jobs:
             |---|---|
             | Seeed Wio Tracker L1 Pro | `meshcaching-wio_tracker_l1-${{ github.ref_name }}.zip` |
             | Heltec WiFi LoRa 32 V3 | `meshcaching-heltec_v3-${{ github.ref_name }}-merged.bin` |
+            | Heltec WiFi LoRa 32 V4.2 | `meshcaching-heltec_v4_2-${{ github.ref_name }}-merged.bin` |
             | Heltec WiFi LoRa 32 V4.3 | `meshcaching-heltec_v4_3-${{ github.ref_name }}-merged.bin` |
             | Heltec WiFi LoRa 32 V4 R8 | `meshcaching-heltec_v4_r8-${{ github.ref_name }}-merged.bin` |
             | Heltec T096 | `meshcaching-heltec_t096-${{ github.ref_name }}.zip` |

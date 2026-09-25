@@ -16,19 +16,22 @@ de Tutoduino, préconisé pour l'évènement
 |------------------|--------------------------------|------------|------------------|----------------|------------------|-----------------|
 | `wio_tracker_l1` | Seeed Wio Tracker L1 Pro       | nRF52840   | SX1262           | SH1106 128×64  | croix + 2 boutons| 22 / 22 dBm     |
 | `heltec_v3`      | Heltec WiFi LoRa 32 V3         | ESP32-S3   | SX1262           | SSD1306 128×64 | 1 bouton (PRG)   | 22 / 22 dBm     |
+| `heltec_v4_2`    | Heltec WiFi LoRa 32 V4.2       | ESP32-S3R2 | SX1262 + FEM     | SSD1306 128×64 | 1 bouton (PRG)   | 20 / 20 dBm     |
 | `heltec_v4_3`    | Heltec WiFi LoRa 32 V4.3       | ESP32-S3R2 | SX1262 + FEM     | SSD1306 128×64 | 1 bouton (PRG)   | 20 / 20 dBm     |
 | `heltec_v4_r8`   | Heltec WiFi LoRa 32 V4 « R8 »  | ESP32-S3R8 | SX1262 + FEM     | SSD1306 128×64 | 1 bouton (PRG)   | 20 / 20 dBm     |
 | `heltec_t096`    | Heltec T096                    | nRF52840   | SX1262 + FEM     | ST7735 160×80  | 1 bouton         | 22 / 22 dBm     |
 | `tbeam_supreme`  | LilyGo T-Beam Supreme (868)    | ESP32-S3   | SX1262           | SH1106 128×64  | 1 bouton         | 22 / 22 dBm     |
 | `tdeck`          | LilyGo T-Deck / T-Deck Plus    | ESP32-S3   | SX1262           | ST7789 320×240 | trackball + clavier | 22 / 22 dBm  |
 
-Sur les cartes à FEM (V4.3, V4 R8, T096), la puissance est exprimée « à
+Sur les cartes à FEM (V4.2, V4.3, V4 R8, T096), la puissance est exprimée « à
 l'antenne » : le gain du KCT8103L en émission (~12 dB sur les V4, ~13 dB sur
 le T096) est retranché automatiquement de la consigne passée au SX1262. Non
-gérés : les V4 antérieurs à la 4.3 (FEM GC1109) et les déclinaisons TFT /
-e-ink des V4. Sur les V4, le type de FEM est vérifié au démarrage (même
-détection que MeshCore, via le niveau de repos de la broche CSD) : un V4 ≤ 4.2
-flashé par erreur s'arrête sur « Carte incompatible » sans jamais émettre.
+gérés : les déclinaisons TFT / e-ink des V4. Sur les V4, le type de FEM
+est vérifié au démarrage (même détection que MeshCore, via le niveau de repos
+de la broche CSD) : un binaire flashé sur la mauvaise révision (build 4.3 sur
+un 4.2, ou l'inverse) s'arrête sur « Carte incompatible » sans jamais
+émettre. Le GC1109 du 4.2 n'a pas de LNA débrayable : le réglage *Gain RX*
+n'y propose pas `FEM LNA`.
 
 Sur le T-Beam Supreme, seule la déclinaison SX1262 (868 MHz) est gérée (ni
 LR1121, ni 2,4 GHz). Le PMU AXP2101 y alimente la radio et l'écran : le
@@ -157,7 +160,7 @@ radio, boutons, bornes de puissance). L'application ne voit que l'interface
 
 ## Crédits
 
-- Sketch d'origine : [Tutoduino](https://github.com/tutoduino/meshcaching_arduino_ide)
+- Sketch d'origine : [Tutoduino](https://tutoduino.fr/menu-sdr/geolocalisation-repeteur-meshcore/)
 - Définitions de cartes et brochages : firmware
   [MeshCore](https://github.com/meshcore-dev/MeshCore) (licence MIT),
   cf. `boards/README.md`

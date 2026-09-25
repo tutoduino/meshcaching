@@ -14,8 +14,9 @@
 #include "hal/Board.h"
 
 #if !defined(BOARD_WIO_TRACKER_L1) && !defined(BOARD_HELTEC_V3) && \
-    !defined(BOARD_HELTEC_V4_3) && !defined(BOARD_HELTEC_V4_R8) && \
-    !defined(BOARD_HELTEC_T096) && !defined(BOARD_TBEAM_SUPREME) && !defined(BOARD_TDECK)
+    !defined(BOARD_HELTEC_V4_2) && !defined(BOARD_HELTEC_V4_3) && \
+    !defined(BOARD_HELTEC_V4_R8) && !defined(BOARD_HELTEC_T096) && \
+    !defined(BOARD_TBEAM_SUPREME) && !defined(BOARD_TDECK)
 #error "No board selected: build through a PlatformIO environment (see platformio.ini)"
 #endif
 

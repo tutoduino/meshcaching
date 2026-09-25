@@ -23,6 +23,12 @@ constexpr uint8_t kLoraSf = 8;
 constexpr uint8_t kLoraCr = 8;
 // TX power (default and max) is specific to each board: see Board.
 
+// MeshCore US preset (use instead of the block above):
+// constexpr float kLoraFreqMhz = 910.525f;
+// constexpr float kLoraBwKhz = 62.5f;
+// constexpr uint8_t kLoraSf = 7;
+// constexpr uint8_t kLoraCr = 5;
+
 // Public key prefix of the targeted MeshCore repeater - factory value
 // on first boot, then editable from the menu (persisted).
 constexpr uint8_t kTargetPubkeyPrefix[] = { 0x57, 0xDB };
