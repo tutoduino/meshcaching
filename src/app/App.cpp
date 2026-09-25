@@ -148,13 +148,13 @@ void App::loop() {
     refreshDisplay();
   }
 
-  if (_radio.packetAvailable()) {
-    handleIncomingPacket();
-  }
+  handleIncomingPackets();
 }
 
 void App::onDisplayIdle(void *self) {
-  static_cast<App *>(self)->_buttons.service();
+  App &app = *static_cast<App *>(self);
+  app._buttons.service();
+  app.pumpRadio();
 }
 
 void App::handleMainEvent(const ButtonEvent &event) {
@@ -263,9 +263,7 @@ void App::sendTracePing() {
   for (;;) {
     // A real packet may have arrived during the backoff slot (the radio
     // stays in listen mode): handle it instead of losing it.
-    if (_radio.packetAvailable()) {
-      handleIncomingPacket();
-    }
+    handleIncomingPackets();
     if (_radio.channelClear()) {
       channelClear = true;
       break;
@@ -340,43 +338,66 @@ bool App::packetComesFromTarget(const uint8_t *packet, size_t len) {
   return memcmp(id, _settings.targetPrefix, compareLen) == 0;
 }
 
-void App::handleIncomingPacket() {
-  uint8_t buf[meshcore::kMaxPacketLen];
-  size_t len = 0;
-  float rssi = 0, snr = 0, despreadRssi = 0;
-
-  int16_t state =
-      _radio.readPacket(buf, sizeof(buf), len, rssi, snr, despreadRssi);
-  if (len == 0) {
+void App::pumpRadio() {
+  if (!_radio.packetAvailable()) {
     return;
   }
+  if (_rxQueueCount == kRxQueueSize) {
+    // Queue full: read the packet anyway to free the radio, and drop the
+    // oldest queued one - the newest is the most likely to be the reply
+    // we are waiting for.
+    _rxQueueHead = (_rxQueueHead + 1) % kRxQueueSize;
+    _rxQueueCount--;
+  }
+  RxPacket &slot = _rxQueue[(_rxQueueHead + _rxQueueCount) % kRxQueueSize];
+  slot.state = _radio.readPacket(slot.data, sizeof(slot.data), slot.len,
+                                 slot.rssi, slot.snr, slot.despreadRssi);
+  if (slot.len == 0) {
+    return;  // empty or oversized packet: nothing to queue
+  }
+  _rxQueueCount++;
+}
+
+void App::handleIncomingPackets() {
+  pumpRadio();
+  while (_rxQueueCount > 0) {
+    // Copy out first: processing may refresh a slow panel, whose idle
+    // hook pumps the radio and can reuse this slot.
+    RxPacket packet = _rxQueue[_rxQueueHead];
+    _rxQueueHead = (_rxQueueHead + 1) % kRxQueueSize;
+    _rxQueueCount--;
+    processPacket(packet);
+  }
+}
+
+void App::processPacket(const RxPacket &packet) {
   // Ignore packets that are unreadable OR whose CRC is invalid: a
   // corrupted packet must never be interpreted as coming from the
   // target repeater (risk of false detection).
-  if (state != RADIOLIB_ERR_NONE) {
-    if (state != RADIOLIB_ERR_CRC_MISMATCH) {
+  if (packet.state != RADIOLIB_ERR_NONE) {
+    if (packet.state != RADIOLIB_ERR_CRC_MISMATCH) {
       Serial.print(F("Receive error: "));
-      Serial.println(state);
+      Serial.println(packet.state);
     }
     return;
   }
 
-  bool isTarget = packetComesFromTarget(buf, len);
+  bool isTarget = packetComesFromTarget(packet.data, packet.len);
   char rssiStr[16], despreadStr[16], snrStr[16];
-  formatDb(rssi, rssiStr, sizeof(rssiStr));
-  formatDb(despreadRssi, despreadStr, sizeof(despreadStr));
-  formatDb(snr, snrStr, sizeof(snrStr));
+  formatDb(packet.rssi, rssiStr, sizeof(rssiStr));
+  formatDb(packet.despreadRssi, despreadStr, sizeof(despreadStr));
+  formatDb(packet.snr, snrStr, sizeof(snrStr));
   Serial.printf(
       "Packet received: len=%u RSSI=%s dBm despread=%s dBm SNR=%s dB %s\n",
-      (unsigned)len, rssiStr, despreadStr, snrStr,
+      (unsigned)packet.len, rssiStr, despreadStr, snrStr,
       isTarget ? "[TARGET REPEATER]" : "");
 
   if (isTarget) {
     _target.hasPacket = true;
     _target.lastSeenMs = millis();
-    _target.rssi = rssi;
-    _target.despreadRssi = despreadRssi;
-    _target.snr = snr;
+    _target.rssi = packet.rssi;
+    _target.despreadRssi = packet.despreadRssi;
+    _target.snr = packet.snr;
     _rxFlashStartMs = _target.lastSeenMs;  // triggers the blink
     if (!_menu.isOpen()) {
       refreshDisplay();  // immediate screen update
