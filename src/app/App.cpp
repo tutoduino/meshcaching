@@ -252,11 +252,18 @@ void App::sendTracePing() {
     return;  // cooldown running: no more than one transmit per period
   }
 
+  // Slow panels (e-ink): a refresh blocks for ~0.5 s, so nothing is
+  // drawn before the transmission - neither the LBT badge, which would
+  // delay the listen, nor the TX badge, which would open a gap between
+  // the "channel clear" verdict and the actual send. A single refresh
+  // follows the transmission, once the radio is listening again.
+  const bool slowPanel = _board.display().minFrameIntervalMs() > 0;
+
   // LBT: transmit only if the channel is clear. Unlike MeshCore, no
   // forced TX at the deadline: we abort and show it.
   _txPhase = TxPhase::Lbt;
   _txPhaseSinceMs = now;
-  if (!_menu.isOpen()) {
+  if (!_menu.isOpen() && !slowPanel) {
     refreshDisplay();  // LBT indicator during the blocking listen
   }
   bool channelClear = false;
@@ -295,7 +302,7 @@ void App::sendTracePing() {
   _hasPinged = true;
   _txPhase = TxPhase::Tx;
   _txPhaseSinceMs = _lastPingMs;
-  if (!_menu.isOpen()) {
+  if (!_menu.isOpen() && !slowPanel) {
     refreshDisplay();  // TX indicator and full bar, before the blocking send
   }
 
@@ -305,6 +312,9 @@ void App::sendTracePing() {
   if (state != RADIOLIB_ERR_NONE) {
     Serial.print(F("Transmit error: "));
     Serial.println(state);
+  }
+  if (!_menu.isOpen() && slowPanel) {
+    refreshDisplay();  // TX indicator and full bar, late by the air time
   }
 }
 
