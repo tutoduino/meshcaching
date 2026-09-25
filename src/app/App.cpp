@@ -71,6 +71,7 @@ void App::setup() {
   size_t buttonCount = 0;
   const ButtonSpec *specs = _board.buttons(buttonCount);
   _buttons.begin(specs, buttonCount);
+  _board.display().setIdleHook(&App::onDisplayIdle, this);
 
   loadSettings();
   Serial.printf("Target repeater: %02X%02X\n", _settings.targetPrefix[0],
@@ -137,9 +138,12 @@ void App::loop() {
   }
 
   // Refresh the main screen (animations, cooldown bar) - never on top
-  // of the menu
-  if (!_menu.isOpen() &&
-      millis() - _lastDisplayRefreshMs >= config::kDisplayRefreshMs) {
+  // of the menu. Slow panels (e-ink) impose their own, longer cadence.
+  uint32_t refreshMs = config::kDisplayRefreshMs;
+  if (_board.display().minFrameIntervalMs() > refreshMs) {
+    refreshMs = _board.display().minFrameIntervalMs();
+  }
+  if (!_menu.isOpen() && millis() - _lastDisplayRefreshMs >= refreshMs) {
     _lastDisplayRefreshMs = millis();
     refreshDisplay();
   }
@@ -147,6 +151,10 @@ void App::loop() {
   if (_radio.packetAvailable()) {
     handleIncomingPacket();
   }
+}
+
+void App::onDisplayIdle(void *self) {
+  static_cast<App *>(self)->_buttons.service();
 }
 
 void App::handleMainEvent(const ButtonEvent &event) {
