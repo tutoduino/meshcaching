@@ -52,7 +52,9 @@ en noir sur blanc. Un rafraîchissement partiel prend ~0,5 s et bloque le
 programme : l'écran n'est redessiné que si son contenu a changé, au plus
 une fois par seconde, et pendant l'attente les boutons restent lus et les
 trames reçues sont sorties du SX1262 (qui ne retient que la dernière) pour
-être traitées ensuite. Les
+être traitées ensuite. Un ping n'y redessine l'écran qu'après l'émission,
+pour ne retarder ni l'écoute du canal ni l'envoi : le badge « TX » apparaît
+avec le temps d'antenne de retard. Les
 animations (clignotement à la réception, logo de sommeil) sont désactivées.
 Un rafraîchissement complet, plus lent (~2,6 s), nettoie les fantômes au
 démarrage puis toutes les 30 mises à jour ou 10 minutes. Le bouton
