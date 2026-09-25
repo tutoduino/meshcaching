@@ -11,17 +11,21 @@ VERSION="${1:?usage: package.sh <version> [directory]}"
 DIST="${2:-dist}"
 BUILD=.pio/build
 
-# esptool: pip module in CI, otherwise the one from the PlatformIO package
-if python3 -c 'import esptool' 2>/dev/null; then
-  esptool() { python3 -m esptool "$@"; }
-else
-  ESPTOOL_PY=$(ls "$HOME"/.platformio/packages/tool-esptoolpy*/esptool.py 2>/dev/null | head -1)
-  [ -n "$ESPTOOL_PY" ] || { echo "esptool not found (pip install esptool)" >&2; exit 1; }
-  esptool() { python3 "$ESPTOOL_PY" "$@"; }
-fi
-
-BOOT_APP0=$(ls "$HOME"/.platformio/packages/framework-arduinoespressif32*/tools/partitions/boot_app0.bin 2>/dev/null | head -1)
-[ -n "$BOOT_APP0" ] || { echo "boot_app0.bin not found" >&2; exit 1; }
+# ESP32 tooling, only looked up when an ESP32 target was built (a job
+# that built a single nRF52 target has neither esptool nor the ESP32
+# framework package installed).
+esp32_tools() {
+  # esptool: pip module in CI, otherwise the one from the PlatformIO package
+  if python3 -c 'import esptool' 2>/dev/null; then
+    esptool() { python3 -m esptool "$@"; }
+  else
+    ESPTOOL_PY=$(ls "$HOME"/.platformio/packages/tool-esptoolpy*/esptool.py 2>/dev/null | head -1)
+    [ -n "$ESPTOOL_PY" ] || { echo "esptool not found (pip install esptool)" >&2; exit 1; }
+    esptool() { python3 "$ESPTOOL_PY" "$@"; }
+  fi
+  BOOT_APP0=$(ls "$HOME"/.platformio/packages/framework-arduinoespressif32*/tools/partitions/boot_app0.bin 2>/dev/null | head -1)
+  [ -n "$BOOT_APP0" ] || { echo "boot_app0.bin not found" >&2; exit 1; }
+}
 
 mkdir -p "$DIST"
 packaged=0
@@ -35,6 +39,7 @@ packaged=0
 # `merge-bin`.)
 for bootloader in "$BUILD"/*/bootloader.bin; do
   [ -e "$bootloader" ] || continue
+  [ -n "${BOOT_APP0:-}" ] || esp32_tools
   target=$(basename "$(dirname "$bootloader")")
   esptool --chip esp32s3 merge_bin \
     -o "$DIST/meshcaching-$target-$VERSION-merged.bin" \

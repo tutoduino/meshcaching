@@ -1,20 +1,47 @@
-# Release: on every semver tag (vX.Y.Z), build all targets and publish
+# Release: on every semver tag (vX.Y.Z), build every target and publish
 # the ready-to-flash binaries (see scripts/package.sh).
 # A tag with a suffix (vX.Y.Z-rc1, vX.Y.Z-tbeam.2...) is published as a
 # pre-release: same binaries, downloadable without a GitHub account, but
 # not shown as the latest stable version.
+#
+# The targets are built in parallel, one job per [env:...] section of
+# platformio.ini (the list is read from the file, nothing to maintain
+# here). A manual run (workflow_dispatch) builds and packages everything
+# as workflow artifacts without publishing a release: use it to test the
+# build on a branch.
 name: release
 
 on:
   push:
     tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
+  targets:
     runs-on: ubuntu-latest
+    outputs:
+      envs: ${{ steps.list.outputs.envs }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List the PlatformIO environments
+        id: list
+        run: |
+          envs=$(grep -oP '^\[env:\K[^\]]+' platformio.ini \
+                 | jq -Rsc 'split("\n") | map(select(length > 0))')
+          echo "envs=$envs" >> "$GITHUB_OUTPUT"
+          echo "targets: $envs"
+
+  build:
+    needs: targets
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: ${{ fromJson(needs.targets.outputs.envs) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,18 +54,50 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.platformio
-          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          key: pio-${{ runner.os }}-${{ matrix.env }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            pio-${{ runner.os }}-${{ matrix.env }}-
 
       - name: Install PlatformIO and esptool
         # Pinned versions: re-running an old tag must rebuild with the
         # same toolchain as the original release.
         run: pip install platformio==6.1.19 esptool==5.2.0
 
-      - name: Build all targets
-        run: pio run
+      - name: Build ${{ matrix.env }}
+        run: pio run -e ${{ matrix.env }}
 
       - name: Package binaries
-        run: scripts/package.sh "$GITHUB_REF_NAME" dist
+        # Version = the tag on a release, git describe on a manual run
+        # (same value scripts/version.py bakes into the firmware).
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            version="$GITHUB_REF_NAME"
+          else
+            version=$(git describe --tags --always)
+          fi
+          scripts/package.sh "$version" dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.env }}
+          path: dist/meshcaching-*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          merge-multiple: true
+          path: dist
+
+      - name: Checksums
+        run: cd dist && sha256sum meshcaching-* > SHA256SUMS && ls -l
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
