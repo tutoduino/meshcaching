@@ -147,9 +147,12 @@ private:
   static_assert(kPanelW >= kLogicalW && kPanelH >= kLogicalH,
                 "the logical frame must fit in the panel");
 
-  // GxEPD2 polls BUSY in a loop and calls this between two samples.
+  // GxEPD2 polls BUSY in a loop and calls this between two samples,
+  // instead of its own delay(1): keep that pause after servicing the
+  // application, so the CPU still sleeps between two polls.
   static void onBusy(const void *self) {
     const_cast<TEchoDisplay *>(static_cast<const TEchoDisplay *>(self))->idle();
+    delay(1);
   }
 
   GxEPD2_BW<TECHO_EINK_MODEL, TECHO_EINK_MODEL::HEIGHT> _epd{
