@@ -22,6 +22,7 @@ de Tutoduino, préconisé pour l'évènement
 | `heltec_t096`    | Heltec T096                    | nRF52840   | SX1262 + FEM     | ST7735 160×80  | 1 bouton         | 22 / 22 dBm     |
 | `tbeam_supreme`  | LilyGo T-Beam Supreme (868)    | ESP32-S3   | SX1262           | SH1106 128×64  | 1 bouton         | 22 / 22 dBm     |
 | `tdeck`          | LilyGo T-Deck / T-Deck Plus    | ESP32-S3   | SX1262           | ST7789 320×240 | trackball + clavier | 22 / 22 dBm  |
+| `techo`          | LilyGo T-Echo                  | nRF52840   | SX1262           | e-ink 200×200  | 1 bouton + touche | 22 / 22 dBm    |
 
 Sur les cartes à FEM (V4.2, V4.3, V4 R8, T096), la puissance est exprimée « à
 l'antenne » : le gain du KCT8103L en émission (~12 dB sur les V4, ~13 dB sur
@@ -44,6 +45,18 @@ Sur le T-Deck, l'écran 128×64 de l'application est agrandi 2× au centre du
 TFT. Le trackball sert de croix directionnelle (son clic = Ok) et le
 clavier complète : Entrée ou Espace = Ok, Retour arrière = Back. Sans
 clavier détecté au démarrage, le trackball seul suffit.
+
+Sur le T-Echo, premier écran e-ink du projet, la zone 128×64 est dessinée
+telle quelle au centre de la dalle 200×200 (pas de facteur entier possible),
+en noir sur blanc. Un rafraîchissement partiel prend ~0,5 s et bloque le
+programme : l'écran n'est redessiné que si son contenu a changé, au plus
+une fois par seconde, et les boutons restent lus pendant l'attente. Les
+animations (clignotement à la réception, logo de sommeil) sont désactivées.
+Un rafraîchissement complet, plus lent (~2,6 s), nettoie les fantômes au
+démarrage puis toutes les 30 mises à jour ou 10 minutes. Le bouton
+utilisateur sert de Ok ; une tape sur la touche capacitive allume ou éteint
+le rétroéclairage. Les lots équipés d'une dalle DEPG0150BN se compilent avec
+`-D TECHO_EINK_MODEL=GxEPD2_150_BN`.
 
 ## Flasher une release
 
@@ -95,9 +108,11 @@ RSSI instantané, évaluation continue et non intrusive) ; le SNR du dernier
 paquet est centré sous le RSSI.
 
 - **Ping TRACE** : appui court sur Ok (joystick sur le L1, clic du trackball
-  sur le T-Deck, bouton PRG sur les Heltec, bouton du milieu sur le T-Beam).
+  sur le T-Deck, bouton PRG sur les Heltec, bouton du milieu sur le T-Beam,
+  bouton utilisateur du T-Echo).
 - **Menu** : bouton Menu sur le L1, appui long sur Ok sur les autres cartes
-  (bouton unique des Heltec et du T-Beam, clic du trackball sur le T-Deck).
+  (bouton unique des Heltec, du T-Beam et du T-Echo, clic du trackball sur
+  le T-Deck).
 
 Quatre réglages, persistés (NVS sur ESP32, LittleFS interne sur nRF52) :
 
@@ -112,9 +127,10 @@ Quatre réglages, persistés (NVS sur ESP32, LittleFS interne sur nRF52) :
 
 Navigation : sur le L1 et le T-Deck, Up/Down navigue ou modifie, Left/Right
 change de digit, Ok valide, Back annule l'édition ou sort du menu. Sur les
-cartes à bouton unique (Heltec, T-Beam) : clic = suivant/modifier, appui long = valider, sortie par
-l'item « Retour ». Dans les deux cas, 20 s d'inactivité referment le menu ;
-les changements sont appliqués et sauvegardés à la fermeture.
+cartes à bouton unique (Heltec, T-Beam, T-Echo) : clic = suivant/modifier,
+appui long = valider, sortie par l'item « Retour ». Dans les deux cas, 20 s
+d'inactivité referment le menu ; les changements sont appliqués et
+sauvegardés à la fermeture.
 
 ## Organisation du code
 

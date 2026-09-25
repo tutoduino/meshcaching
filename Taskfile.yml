@@ -4,7 +4,7 @@
 #   task upload TARGET=heltec_v3   -> upload (default: wio_tracker_l1)
 #   task flash TARGET=...          -> upload, then open the serial monitor
 # Targets: wio_tracker_l1, heltec_v3, heltec_v4_2, heltec_v4_3, heltec_v4_r8,
-# heltec_t096, tbeam_supreme, tdeck.
+# heltec_t096, tbeam_supreme, tdeck, techo.
 # Serial port auto-detected by PlatformIO; force it with PORT=/dev/ttyACM0.
 # If the upload fails on the Wio Tracker: double-press RESET = bootloader
 # mode (DFU port), then try again.
