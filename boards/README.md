@@ -15,7 +15,10 @@ Définitions de cartes reprises du firmware MeshCore
   `src/hal/boards/BoardTBeamSupreme.cpp` en sont également repris, recoupés
   avec les exemples LilyGo-LoRa-Series) ;
 - LilyGo T-Deck : `boards/t-deck.json` (brochage repris de
-  `variants/lilygo_tdeck`, recoupé avec Meshtastic).
+  `variants/lilygo_tdeck`, recoupé avec Meshtastic) ;
+- LilyGo T-Echo : `boards/lilygo_t_echo.json` et
+  `variants/LilyGo_T_Echo/variant.{h,cpp}` (repris de `variants/lilygo_techo`,
+  recoupés avec le firmware d'usine LilyGo et Meshtastic).
 
 Le Heltec V3 utilise la définition `heltec_wifi_lora_32_V3` fournie par la
 plateforme PlatformIO `espressif32`, rien à embarquer ici.

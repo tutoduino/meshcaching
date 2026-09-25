@@ -17,7 +17,26 @@ void Buttons::begin(const ButtonSpec *specs, size_t count) {
   }
 }
 
+void Buttons::push(const ButtonEvent &event) {
+  if (_queueCount == kQueueSize) {
+    return;  // overflow: the oldest events win, the newest is dropped
+  }
+  _queue[(_queueHead + _queueCount) % kQueueSize] = event;
+  _queueCount++;
+}
+
 bool Buttons::poll(ButtonEvent &event) {
+  service();
+  if (_queueCount == 0) {
+    return false;
+  }
+  event = _queue[_queueHead];
+  _queueHead = (_queueHead + 1) % kQueueSize;
+  _queueCount--;
+  return true;
+}
+
+void Buttons::service() {
   uint32_t now = millis();
   for (size_t i = 0; i < _count; i++) {
     State &s = _states[i];
@@ -32,15 +51,12 @@ bool Buttons::poll(ButtonEvent &event) {
         s.pressedAtMs = now;
         s.longFired = false;
       } else if (!s.longFired) {
-        event = {s.spec.key, false};  // short click, emitted on release
-        return true;
+        push({s.spec.key, false});  // short click, emitted on release
       }
     }
     if (s.stable && !s.longFired && now - s.pressedAtMs >= kLongPressMs) {
       s.longFired = true;
-      event = {s.spec.key, true};
-      return true;
+      push({s.spec.key, true});
     }
   }
-  return false;
 }

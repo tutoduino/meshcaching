@@ -71,6 +71,7 @@ void App::setup() {
   size_t buttonCount = 0;
   const ButtonSpec *specs = _board.buttons(buttonCount);
   _buttons.begin(specs, buttonCount);
+  _board.display().setIdleHook(&App::onDisplayIdle, this);
 
   loadSettings();
   Serial.printf("Target repeater: %02X%02X\n", _settings.targetPrefix[0],
@@ -137,16 +138,23 @@ void App::loop() {
   }
 
   // Refresh the main screen (animations, cooldown bar) - never on top
-  // of the menu
-  if (!_menu.isOpen() &&
-      millis() - _lastDisplayRefreshMs >= config::kDisplayRefreshMs) {
+  // of the menu. Slow panels (e-ink) impose their own, longer cadence.
+  uint32_t refreshMs = config::kDisplayRefreshMs;
+  if (_board.display().minFrameIntervalMs() > refreshMs) {
+    refreshMs = _board.display().minFrameIntervalMs();
+  }
+  if (!_menu.isOpen() && millis() - _lastDisplayRefreshMs >= refreshMs) {
     _lastDisplayRefreshMs = millis();
     refreshDisplay();
   }
 
-  if (_radio.packetAvailable()) {
-    handleIncomingPacket();
-  }
+  handleIncomingPackets();
+}
+
+void App::onDisplayIdle(void *self) {
+  App &app = *static_cast<App *>(self);
+  app._buttons.service();
+  app.pumpRadio();
 }
 
 void App::handleMainEvent(const ButtonEvent &event) {
@@ -197,18 +205,25 @@ void App::refreshDisplay() {
   view.despreadRssi = _target.despreadRssi;
   view.rssiDisplay = _settings.rssiDisplay;
   view.snr = _target.snr;
+  // Slow panels (e-ink): every change of the frame costs a ~0.5 s
+  // refresh, so the transient parts of the view are coarsened - TX badge
+  // kept for the whole cooldown, two-state bar, noise floor with
+  // hysteresis - to keep the count down to what carries information.
+  const bool slowPanel = _board.display().minFrameIntervalMs() > 0;
   view.txBadge = nullptr;
   switch (_txPhase) {
     case TxPhase::Lbt:
       view.txBadge = "LBT";
       break;
-    case TxPhase::Tx:
-      if (now - _txPhaseSinceMs < config::kTxIndicatorMs) {
+    case TxPhase::Tx: {
+      uint32_t badgeMs = slowPanel ? config::kTxCooldownMs : config::kTxIndicatorMs;
+      if (now - _txPhaseSinceMs < badgeMs) {
         view.txBadge = "TX";
       } else {
         _txPhase = TxPhase::Idle;
       }
       break;
+    }
     case TxPhase::Busy:
       if (now - _txPhaseSinceMs < config::kLbtBusyMsgMs) {
         view.txBadge = "OCCUPÉ";
@@ -221,6 +236,16 @@ void App::refreshDisplay() {
   }
   view.noiseValid = _noise.hasValue();
   view.noiseDbm = _noise.valueDbm();
+  if (slowPanel && view.noiseValid) {
+    // The median flips between neighbouring integers all the time: only
+    // follow it once it has moved by kSlowPanelNoiseHysteresisDb.
+    if (!_shownNoiseValid ||
+        fabsf(view.noiseDbm - _shownNoiseDbm) >= kSlowPanelNoiseHysteresisDb) {
+      _shownNoiseDbm = view.noiseDbm;
+      _shownNoiseValid = true;
+    }
+    view.noiseDbm = _shownNoiseDbm;
+  }
   view.invert = _target.hasPacket && now - _rxFlashStartMs < config::kRxFlashMs;
   uint32_t sincePing = now - _lastPingMs;
   view.cooldownTotalMs = config::kTxCooldownMs;
@@ -235,6 +260,9 @@ void App::refreshDisplay() {
                                    ? config::kTxCooldownMs - sincePing
                                    : 0;
   }
+  if (slowPanel && view.cooldownRemainingMs > 0) {
+    view.cooldownRemainingMs = config::kTxCooldownMs;  // full or absent
+  }
   _screen.drawMain(view);
 }
 
@@ -244,20 +272,25 @@ void App::sendTracePing() {
     return;  // cooldown running: no more than one transmit per period
   }
 
+  // Slow panels (e-ink): a refresh blocks for ~0.5 s, so nothing is
+  // drawn before the transmission - neither the LBT badge, which would
+  // delay the listen, nor the TX badge, which would open a gap between
+  // the "channel clear" verdict and the actual send. A single refresh
+  // follows the transmission, once the radio is listening again.
+  const bool slowPanel = _board.display().minFrameIntervalMs() > 0;
+
   // LBT: transmit only if the channel is clear. Unlike MeshCore, no
   // forced TX at the deadline: we abort and show it.
   _txPhase = TxPhase::Lbt;
   _txPhaseSinceMs = now;
-  if (!_menu.isOpen()) {
+  if (!_menu.isOpen() && !slowPanel) {
     refreshDisplay();  // LBT indicator during the blocking listen
   }
   bool channelClear = false;
   for (;;) {
     // A real packet may have arrived during the backoff slot (the radio
     // stays in listen mode): handle it instead of losing it.
-    if (_radio.packetAvailable()) {
-      handleIncomingPacket();
-    }
+    handleIncomingPackets();
     if (_radio.channelClear()) {
       channelClear = true;
       break;
@@ -289,7 +322,7 @@ void App::sendTracePing() {
   _hasPinged = true;
   _txPhase = TxPhase::Tx;
   _txPhaseSinceMs = _lastPingMs;
-  if (!_menu.isOpen()) {
+  if (!_menu.isOpen() && !slowPanel) {
     refreshDisplay();  // TX indicator and full bar, before the blocking send
   }
 
@@ -299,6 +332,9 @@ void App::sendTracePing() {
   if (state != RADIOLIB_ERR_NONE) {
     Serial.print(F("Transmit error: "));
     Serial.println(state);
+  }
+  if (!_menu.isOpen() && slowPanel) {
+    refreshDisplay();  // TX indicator and full bar, late by the air time
   }
 }
 
@@ -332,43 +368,66 @@ bool App::packetComesFromTarget(const uint8_t *packet, size_t len) {
   return memcmp(id, _settings.targetPrefix, compareLen) == 0;
 }
 
-void App::handleIncomingPacket() {
-  uint8_t buf[meshcore::kMaxPacketLen];
-  size_t len = 0;
-  float rssi = 0, snr = 0, despreadRssi = 0;
-
-  int16_t state =
-      _radio.readPacket(buf, sizeof(buf), len, rssi, snr, despreadRssi);
-  if (len == 0) {
+void App::pumpRadio() {
+  if (!_radio.packetAvailable()) {
     return;
   }
+  if (_rxQueueCount == kRxQueueSize) {
+    // Queue full: read the packet anyway to free the radio, and drop the
+    // oldest queued one - the newest is the most likely to be the reply
+    // we are waiting for.
+    _rxQueueHead = (_rxQueueHead + 1) % kRxQueueSize;
+    _rxQueueCount--;
+  }
+  RxPacket &slot = _rxQueue[(_rxQueueHead + _rxQueueCount) % kRxQueueSize];
+  slot.state = _radio.readPacket(slot.data, sizeof(slot.data), slot.len,
+                                 slot.rssi, slot.snr, slot.despreadRssi);
+  if (slot.len == 0) {
+    return;  // empty or oversized packet: nothing to queue
+  }
+  _rxQueueCount++;
+}
+
+void App::handleIncomingPackets() {
+  pumpRadio();
+  while (_rxQueueCount > 0) {
+    // Copy out first: processing may refresh a slow panel, whose idle
+    // hook pumps the radio and can reuse this slot.
+    RxPacket packet = _rxQueue[_rxQueueHead];
+    _rxQueueHead = (_rxQueueHead + 1) % kRxQueueSize;
+    _rxQueueCount--;
+    processPacket(packet);
+  }
+}
+
+void App::processPacket(const RxPacket &packet) {
   // Ignore packets that are unreadable OR whose CRC is invalid: a
   // corrupted packet must never be interpreted as coming from the
   // target repeater (risk of false detection).
-  if (state != RADIOLIB_ERR_NONE) {
-    if (state != RADIOLIB_ERR_CRC_MISMATCH) {
+  if (packet.state != RADIOLIB_ERR_NONE) {
+    if (packet.state != RADIOLIB_ERR_CRC_MISMATCH) {
       Serial.print(F("Receive error: "));
-      Serial.println(state);
+      Serial.println(packet.state);
     }
     return;
   }
 
-  bool isTarget = packetComesFromTarget(buf, len);
+  bool isTarget = packetComesFromTarget(packet.data, packet.len);
   char rssiStr[16], despreadStr[16], snrStr[16];
-  formatDb(rssi, rssiStr, sizeof(rssiStr));
-  formatDb(despreadRssi, despreadStr, sizeof(despreadStr));
-  formatDb(snr, snrStr, sizeof(snrStr));
+  formatDb(packet.rssi, rssiStr, sizeof(rssiStr));
+  formatDb(packet.despreadRssi, despreadStr, sizeof(despreadStr));
+  formatDb(packet.snr, snrStr, sizeof(snrStr));
   Serial.printf(
       "Packet received: len=%u RSSI=%s dBm despread=%s dBm SNR=%s dB %s\n",
-      (unsigned)len, rssiStr, despreadStr, snrStr,
+      (unsigned)packet.len, rssiStr, despreadStr, snrStr,
       isTarget ? "[TARGET REPEATER]" : "");
 
   if (isTarget) {
     _target.hasPacket = true;
     _target.lastSeenMs = millis();
-    _target.rssi = rssi;
-    _target.despreadRssi = despreadRssi;
-    _target.snr = snr;
+    _target.rssi = packet.rssi;
+    _target.despreadRssi = packet.despreadRssi;
+    _target.snr = packet.snr;
     _rxFlashStartMs = _target.lastSeenMs;  // triggers the blink
     if (!_menu.isOpen()) {
       refreshDisplay();  // immediate screen update

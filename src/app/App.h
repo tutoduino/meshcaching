@@ -5,6 +5,7 @@
 #include "../hal/Buttons.h"
 #include "../hal/Radio.h"
 #include "../hal/Settings.h"
+#include "../mesh/Protocol.h"
 #include "../ui/SettingsMenu.h"
 #include "../ui/StatusScreen.h"
 #include "NoiseFloor.h"
@@ -34,12 +35,35 @@ private:
     float snr = 0;
   };
 
+  // A packet read from the radio, waiting to be processed. The SX1262
+  // only keeps the last packet received: reading it out promptly is what
+  // guarantees that nothing is lost, processing can wait.
+  struct RxPacket {
+    uint8_t data[meshcore::kMaxPacketLen];
+    size_t len;
+    int16_t state;  // RadioLib result of the read (CRC check included)
+    float rssi;
+    float despreadRssi;
+    float snr;
+  };
+  static constexpr size_t kRxQueueSize = 4;
+  // Slow panels: the displayed noise floor only follows the median once
+  // it has moved by this much (dB), to spare refreshes.
+  static constexpr float kSlowPanelNoiseHysteresisDb = 2.0f;
+
   void loadSettings();
   void applyMenuResult();
   void refreshDisplay();
   void handleMainEvent(const ButtonEvent &event);
+  // Display idle hook (slow panels): keeps the buttons serviced and the
+  // radio drained while the panel refreshes.
+  static void onDisplayIdle(void *self);
   void sendTracePing();
-  void handleIncomingPacket();
+  // Moves a packet flagged by the radio into the queue, if any.
+  void pumpRadio();
+  // Drains the radio, then processes every queued packet.
+  void handleIncomingPackets();
+  void processPacket(const RxPacket &packet);
   bool packetComesFromTarget(const uint8_t *packet, size_t len);
 
   Board &_board;
@@ -67,4 +91,10 @@ private:
   uint32_t _rxFlashStartMs = 0;
   uint32_t _lastNoiseSampleMs = 0;
   uint32_t _lastDisplayRefreshMs = 0;
+  // Noise floor currently shown on a slow panel (hysteresis)
+  bool _shownNoiseValid = false;
+  float _shownNoiseDbm = 0;
+  RxPacket _rxQueue[kRxQueueSize];
+  uint8_t _rxQueueHead = 0;
+  uint8_t _rxQueueCount = 0;
 };
