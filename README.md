@@ -50,7 +50,9 @@ Sur le T-Echo, premier écran e-ink du projet, la zone 128×64 est dessinée
 telle quelle au centre de la dalle 200×200 (pas de facteur entier possible),
 en noir sur blanc. Un rafraîchissement partiel prend ~0,5 s et bloque le
 programme : l'écran n'est redessiné que si son contenu a changé, au plus
-une fois par seconde, et les boutons restent lus pendant l'attente. Les
+une fois par seconde, et pendant l'attente les boutons restent lus et les
+trames reçues sont sorties du SX1262 (qui ne retient que la dernière) pour
+être traitées ensuite. Les
 animations (clignotement à la réception, logo de sommeil) sont désactivées.
 Un rafraîchissement complet, plus lent (~2,6 s), nettoie les fantômes au
 démarrage puis toutes les 30 mises à jour ou 10 minutes. Le bouton
