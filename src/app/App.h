@@ -38,6 +38,9 @@ private:
   void applyMenuResult();
   void refreshDisplay();
   void handleMainEvent(const ButtonEvent &event);
+  // Display idle hook (slow panels): keeps the buttons serviced while
+  // the panel refreshes.
+  static void onDisplayIdle(void *self);
   void sendTracePing();
   void handleIncomingPacket();
   bool packetComesFromTarget(const uint8_t *packet, size_t len);
