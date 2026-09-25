@@ -47,6 +47,9 @@ private:
     float snr;
   };
   static constexpr size_t kRxQueueSize = 4;
+  // Slow panels: the displayed noise floor only follows the median once
+  // it has moved by this much (dB), to spare refreshes.
+  static constexpr float kSlowPanelNoiseHysteresisDb = 2.0f;
 
   void loadSettings();
   void applyMenuResult();
@@ -88,6 +91,9 @@ private:
   uint32_t _rxFlashStartMs = 0;
   uint32_t _lastNoiseSampleMs = 0;
   uint32_t _lastDisplayRefreshMs = 0;
+  // Noise floor currently shown on a slow panel (hysteresis)
+  bool _shownNoiseValid = false;
+  float _shownNoiseDbm = 0;
   RxPacket _rxQueue[kRxQueueSize];
   uint8_t _rxQueueHead = 0;
   uint8_t _rxQueueCount = 0;

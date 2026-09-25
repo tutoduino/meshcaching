@@ -205,18 +205,25 @@ void App::refreshDisplay() {
   view.despreadRssi = _target.despreadRssi;
   view.rssiDisplay = _settings.rssiDisplay;
   view.snr = _target.snr;
+  // Slow panels (e-ink): every change of the frame costs a ~0.5 s
+  // refresh, so the transient parts of the view are coarsened - TX badge
+  // kept for the whole cooldown, two-state bar, noise floor with
+  // hysteresis - to keep the count down to what carries information.
+  const bool slowPanel = _board.display().minFrameIntervalMs() > 0;
   view.txBadge = nullptr;
   switch (_txPhase) {
     case TxPhase::Lbt:
       view.txBadge = "LBT";
       break;
-    case TxPhase::Tx:
-      if (now - _txPhaseSinceMs < config::kTxIndicatorMs) {
+    case TxPhase::Tx: {
+      uint32_t badgeMs = slowPanel ? config::kTxCooldownMs : config::kTxIndicatorMs;
+      if (now - _txPhaseSinceMs < badgeMs) {
         view.txBadge = "TX";
       } else {
         _txPhase = TxPhase::Idle;
       }
       break;
+    }
     case TxPhase::Busy:
       if (now - _txPhaseSinceMs < config::kLbtBusyMsgMs) {
         view.txBadge = "OCCUPÉ";
@@ -229,6 +236,16 @@ void App::refreshDisplay() {
   }
   view.noiseValid = _noise.hasValue();
   view.noiseDbm = _noise.valueDbm();
+  if (slowPanel && view.noiseValid) {
+    // The median flips between neighbouring integers all the time: only
+    // follow it once it has moved by kSlowPanelNoiseHysteresisDb.
+    if (!_shownNoiseValid ||
+        fabsf(view.noiseDbm - _shownNoiseDbm) >= kSlowPanelNoiseHysteresisDb) {
+      _shownNoiseDbm = view.noiseDbm;
+      _shownNoiseValid = true;
+    }
+    view.noiseDbm = _shownNoiseDbm;
+  }
   view.invert = _target.hasPacket && now - _rxFlashStartMs < config::kRxFlashMs;
   uint32_t sincePing = now - _lastPingMs;
   view.cooldownTotalMs = config::kTxCooldownMs;
@@ -242,6 +259,9 @@ void App::refreshDisplay() {
     view.cooldownRemainingMs = (_hasPinged && sincePing < config::kTxCooldownMs)
                                    ? config::kTxCooldownMs - sincePing
                                    : 0;
+  }
+  if (slowPanel && view.cooldownRemainingMs > 0) {
+    view.cooldownRemainingMs = config::kTxCooldownMs;  // full or absent
   }
   _screen.drawMain(view);
 }

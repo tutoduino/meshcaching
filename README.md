@@ -54,7 +54,10 @@ une fois par seconde, et pendant l'attente les boutons restent lus et les
 trames reçues sont sorties du SX1262 (qui ne retient que la dernière) pour
 être traitées ensuite. Un ping n'y redessine l'écran qu'après l'émission,
 pour ne retarder ni l'écoute du canal ni l'envoi : le badge « TX » apparaît
-avec le temps d'antenne de retard. Les
+avec le temps d'antenne de retard. Pour limiter le nombre de rafraîchissements,
+la barre de réarmement n'y a que deux états (pleine, puis absente), le
+badge « TX » reste affiché pendant tout le réarmement, et le bruit de fond
+affiché ne suit la mesure qu'à partir de 2 dB d'écart. Les
 animations (clignotement à la réception, logo de sommeil) sont désactivées.
 Un rafraîchissement complet, plus lent (~2,6 s), nettoie les fantômes au
 démarrage puis toutes les 30 mises à jour ou 10 minutes. Le bouton
