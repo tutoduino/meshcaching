@@ -16,11 +16,11 @@ namespace config {
 // Splash screen duration (MESHCACHING + version)
 constexpr uint32_t kSplashMs = 3000;
 
-// --- Radio settings: MeshCore EU Narrow preset ---
+// --- Radio settings: MeshCaching France presets ---
 constexpr float kLoraFreqMhz = 869.493f;
 constexpr float kLoraBwKhz = 62.5f;
 constexpr uint8_t kLoraSf = 7;
-constexpr uint8_t kLoraCr = 8;
+constexpr uint8_t kLoraCr = 5;
 // TX power (default and max) is specific to each board: see Board.
 
 // MeshCore US preset (use instead of the block above):
