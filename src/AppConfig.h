@@ -17,9 +17,9 @@ namespace config {
 constexpr uint32_t kSplashMs = 3000;
 
 // --- Radio settings: MeshCore EU Narrow preset ---
-constexpr float kLoraFreqMhz = 869.618f;
+constexpr float kLoraFreqMhz = 869.493f;
 constexpr float kLoraBwKhz = 62.5f;
-constexpr uint8_t kLoraSf = 8;
+constexpr uint8_t kLoraSf = 7;
 constexpr uint8_t kLoraCr = 8;
 // TX power (default and max) is specific to each board: see Board.
 
@@ -37,7 +37,7 @@ constexpr uint8_t kTargetPubkeyPrefix[] = { 0x57, 0xDB };
 constexpr uint32_t kTraceReplyTimeoutMs = 10000;
 
 // Minimum delay between two TRACE transmissions
-constexpr uint32_t kTxCooldownMs = 5000;
+constexpr uint32_t kTxCooldownMs = 9500;
 
 // Display duration of the "TX" transmit indicator
 constexpr uint32_t kTxIndicatorMs = 700;

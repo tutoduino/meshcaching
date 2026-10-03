@@ -12,12 +12,12 @@ struct MainView {
   bool rssiValid;                // false: sleep logo instead of the RSSI
   float rssi;                    // RssiPkt, averaged over the packet
   float despreadRssi;            // SignalRssiPkt, after despreading
-  RssiDisplayMode rssiDisplay;   // both side by side, or a single large one
   float snr;
   bool noiseValid;               // measured noise floor (median) available?
   float noiseDbm;
   const char *txBadge;           // transmit indicator ("LBT", "TX",
                                  // "OCCUPÉ"...); nullptr = none
+  bool autoPing;                 // automatic TRACE ping enabled                                 
   bool invert;                   // blinking: inverted frame
   uint32_t cooldownRemainingMs;  // until the next transmission (0 = ready)
   uint32_t cooldownTotalMs;

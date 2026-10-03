@@ -17,6 +17,10 @@ static void formatDb(float value, char *out, size_t outLen) {
            (char)('0' + abs(v10) % 10));
 }
 
+// Period of the automatic TRACE ping. Must be >= config::kTxCooldownMs,
+// otherwise sendTracePing() refuses some pings because of the cooldown.
+static constexpr uint32_t kAutoPingIntervalMs = 10000;
+
 App::App(Board &board)
     : _board(board),
       _radio(board),
@@ -30,7 +34,7 @@ void App::loadSettings() {
            sizeof(_settings.targetPrefix));
     _settings.txPowerDbm = _board.txPowerDefaultDbm();
     _settings.rxGainMode = RxGainMode::kSxBoost;
-    _settings.rssiDisplay = RssiDisplayMode::kRssiOnly;
+    _settings.autoPing = false;
   }
   // Safety clamps, in particular if the config comes from another board
   if (_settings.txPowerDbm > _board.txPowerMaxDbm()) {
@@ -41,9 +45,6 @@ void App::loadSettings() {
   }
   if (_settings.rxGainMode == RxGainMode::kFemLna && !_board.hasFemLna()) {
     _settings.rxGainMode = RxGainMode::kSxBoost;
-  }
-  if ((uint8_t)_settings.rssiDisplay > (uint8_t)RssiDisplayMode::kDespreadOnly) {
-    _settings.rssiDisplay = RssiDisplayMode::kRssiOnly;
   }
 }
 
@@ -144,6 +145,15 @@ void App::loop() {
     refreshDisplay();
   }
 
+  // Automatic TRACE ping. The deadline is advanced before sending: if the
+  // channel is busy (LBT aborted), we retry at the next period instead of
+  // looping continuously.
+  if (_settings.autoPing && !_menu.isOpen() &&
+      (int32_t)(millis() - _nextAutoPingMs) >= 0) {
+    _nextAutoPingMs = millis() + kAutoPingIntervalMs;
+    sendTracePing();
+  }
+
   if (_radio.packetAvailable()) {
     handleIncomingPacket();
   }
@@ -165,6 +175,7 @@ void App::applyMenuResult() {
   bool changed = !settingsEqual(updated, _settings);
   bool targetChanged = memcmp(updated.targetPrefix, _settings.targetPrefix,
                               sizeof(_settings.targetPrefix)) != 0;
+  bool wasAutoPing = _settings.autoPing;
   _settings = updated;
 
   _radio.setTxPowerDbm(_settings.txPowerDbm);
@@ -174,11 +185,15 @@ void App::applyMenuResult() {
     _target = RepeaterStatus();
     _lastSentTag = 0;
   }
+  if (_settings.autoPing && !wasAutoPing) {
+    _nextAutoPingMs = millis();  // auto ping just enabled: first ping now
+  }
   if (changed) {
     settingsSave(_settings);
-    Serial.printf("Settings saved: target=%02X%02X TX=%ddBm rxGain=%u\n",
+    Serial.printf("Settings saved: target=%02X%02X TX=%ddBm rxGain=%u auto=%d\n",
                   _settings.targetPrefix[0], _settings.targetPrefix[1],
-                  _settings.txPowerDbm, (unsigned)_settings.rxGainMode);
+                  _settings.txPowerDbm, (unsigned)_settings.rxGainMode,
+                  (int)_settings.autoPing);
   }
 
   refreshDisplay();
@@ -195,7 +210,7 @@ void App::refreshDisplay() {
   view.rssiValid = _target.hasPacket;
   view.rssi = _target.rssi;
   view.despreadRssi = _target.despreadRssi;
-  view.rssiDisplay = _settings.rssiDisplay;
+  view.autoPing = _settings.autoPing;
   view.snr = _target.snr;
   view.txBadge = nullptr;
   switch (_txPhase) {
@@ -281,10 +296,23 @@ void App::sendTracePing() {
 
   uint8_t buf[meshcore::kTracePingLen];
   uint32_t tag = sysRandom32();  // random identifier for this request
-  size_t len =
-      meshcore::buildTracePing(buf, tag, _settings.targetPrefix[0]);
 
-  _lastSentTag = tag;  // we will use this tag to recognize the reply
+  // Hash size used in the TRACE path (encoded in the flags byte): 2 bytes
+  // of the target's public key prefix, to limit collisions with other repeaters.
+  constexpr uint8_t kTraceHashSize = 2;
+  static_assert(sizeof(_settings.targetPrefix) >= kTraceHashSize,
+                "targetPrefix is too short for the trace hash size");
+
+  size_t len = meshcore::buildTracePing(buf, tag, _settings.targetPrefix,
+                                        kTraceHashSize);
+  if (len == 0) {
+    // Invalid hash size: nothing to send, no cooldown, back to idle
+    Serial.println(F("buildTracePing: invalid hash size"));
+    _txPhase = TxPhase::Idle;
+    return;
+  }
+
+  _lastSentTag = tag;  // kept for the log only: the reply is no longer matched by tag
   _lastPingMs = millis();
   _hasPinged = true;
   _txPhase = TxPhase::Tx;
@@ -293,8 +321,10 @@ void App::sendTracePing() {
     refreshDisplay();  // TX indicator and full bar, before the blocking send
   }
 
-  Serial.printf("Sending TRACE (tag=%08lX) to REPEATER %02X...\n",
-                (unsigned long)tag, _settings.targetPrefix[0]);
+  Serial.printf("Sending TRACE (tag=%08lX) to REPEATER %02X%02X...\n",
+                (unsigned long)tag, _settings.targetPrefix[0],
+                _settings.targetPrefix[1]);
+
   int16_t state = _radio.transmit(buf, len);
   if (state != RADIOLIB_ERR_NONE) {
     Serial.print(F("Transmit error: "));
@@ -303,33 +333,45 @@ void App::sendTracePing() {
 }
 
 bool App::packetComesFromTarget(const uint8_t *packet, size_t len) {
-  meshcore::PacketView pkt;
-  if (!meshcore::parse(packet, len, pkt)) {
+  if (len < 2) {
     return false;
   }
 
-  // A TRACE reply can only be recognized by its tag, echoed as-is: we
-  // compare it against our last ping, within the allowed time window.
-  if (pkt.payloadType == meshcore::kPayloadTrace) {
-    uint32_t tag;
-    if (!meshcore::traceTag(pkt, tag) || _lastSentTag == 0) {
-      return false;
-    }
-    if (millis() - _lastPingMs > config::kTraceReplyTimeoutMs) {
-      return false;
-    }
-    return tag == _lastSentTag;
-  }
+  uint8_t routeType   = packet[0] & 0x03;
+  uint8_t payloadType = (packet[0] >> 2) & 0x0F;
 
-  // Otherwise: the identifier of the last transmitting node, compared
-  // to the public key prefix of the target repeater.
-  const uint8_t *id = nullptr;
-  size_t idLen = 0;
-  if (!meshcore::lastHopId(pkt, id, idLen)) {
+  // Only direct-route TRACE packets are of interest
+  if (payloadType != meshcore::kPayloadTrace ||
+      routeType != meshcore::kRouteDirect) {
     return false;
   }
-  size_t compareLen = min(idLen, sizeof(_settings.targetPrefix));
-  return memcmp(id, _settings.targetPrefix, compareLen) == 0;
+
+  // Number of SNR bytes in the path = hops already done.
+  // 0 = original packet (sent by the node that started the trace), not a reply.
+  uint8_t hopCount = packet[1] & 0x3F;
+  if (hopCount == 0) {
+    return false;
+  }
+
+  // The payload starts after the SNR bytes (1 byte per hop)
+  size_t offset = 2 + hopCount;
+  if (offset + 9 > len) {
+    return false;
+  }
+  const uint8_t *payload = packet + offset;
+
+  // TRACE payload: tag(4) + auth(4) + flags(1) + path hashes
+  uint8_t hashSize = 1 << (payload[8] & 0x03);  // 1, 2, 4 or 8 bytes
+  size_t hashesLen = len - offset - 9;
+  if ((size_t)hopCount * hashSize > hashesLen) {
+    return false;
+  }
+
+  // Last node that relayed = hash #(hopCount-1) of the traced path
+  const uint8_t *lastHop = payload + 9 + (size_t)(hopCount - 1) * hashSize;
+
+  size_t compareLen = min((size_t)hashSize, sizeof(_settings.targetPrefix));
+  return memcmp(lastHop, _settings.targetPrefix, compareLen) == 0;
 }
 
 void App::handleIncomingPacket() {

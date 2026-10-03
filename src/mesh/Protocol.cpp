@@ -73,7 +73,17 @@ bool traceTag(const PacketView &pkt, uint32_t &tag) {
   return true;
 }
 
-size_t buildTracePing(uint8_t *out, uint32_t tag, uint8_t targetHash) {
+size_t buildTracePing(uint8_t *out, uint32_t tag,
+                      const uint8_t *targetHash, uint8_t hashSize) {
+  uint8_t flags;
+  switch (hashSize) {
+    case 1: flags = 0x00; break;
+    case 2: flags = 0x01; break;
+    case 4: flags = 0x02; break;
+    case 8: flags = 0x03; break;
+    default: return 0;  // invalid hash size
+  }
+
   size_t offset = 0;
   // Header: TRACE payload + DIRECT route
   out[offset++] = (kPayloadTrace << 2) | kRouteDirect;
@@ -85,9 +95,10 @@ size_t buildTracePing(uint8_t *out, uint32_t tag, uint8_t targetHash) {
   uint32_t authCode = 0;  // no specific authentication code
   memcpy(out + offset, &authCode, sizeof(authCode));
   offset += sizeof(authCode);
-  out[offset++] = 0x00;  // flags, reserved for now
+  out[offset++] = flags;  // bits 0-1 = hash size of the traced path
   // List of nodes to trace: a single one, the target
-  out[offset++] = targetHash;
+  memcpy(out + offset, targetHash, hashSize);
+  offset += hashSize;
   return offset;
 }
 

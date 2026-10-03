@@ -7,7 +7,7 @@
 
 // =====================================================================
 // Settings menu: target repeater (4 hex digits), TX power, RX gain
-// chain (+ FEM LNA on the boards that have one).
+// chain (+ FEM LNA on the boards that have one), automatic TRACE ping.
 //
 // Controls depend on the keys the board provides:
 //  - D-pad (Wio Tracker L1): Up/Down navigates or edits, Left/Right
@@ -20,7 +20,7 @@
 // true (closing), the caller applies and saves result().
 // =====================================================================
 class SettingsMenu {
-public:
+ public:
   SettingsMenu(Display &display, Board &board);
 
   void open(const AppSettings &current);
@@ -30,16 +30,15 @@ public:
   bool handleEvent(const ButtonEvent &event);
   bool tickTimeout();
 
-private:
+ private:
   enum class Action : uint8_t { None, Up, Down, Left, Right, Select, Exit };
-  enum class Item : uint8_t { Target, TxPower, RxGain, RssiDisplay, Back };
+  enum class Item : uint8_t { Target, TxPower, RxGain, AutoPing, Back };
   static constexpr uint8_t kItemCount = 5;
   enum class Mode : uint8_t {
     Nav,
     EditTarget,
     EditTxPower,
     EditRxGain,
-    EditRssiDisplay,
   };
 
   static constexpr uint32_t kTimeoutMs = 20000;
@@ -50,20 +49,17 @@ private:
   void handleEditTarget(Action action);
   void handleEditTxPower(Action action);
   void handleEditRxGain(Action action);
-  void handleEditRssiDisplay(Action action);
 
   uint8_t nibble(uint8_t index) const;
   void setNibble(uint8_t index, uint8_t value);
   uint8_t rxGainChoices(RxGainMode out[3]) const;
   static const char *rxGainLabel(RxGainMode mode);
-  static const char *rssiDisplayLabel(RssiDisplayMode mode);
 
   void draw();
   void drawNav();
   void drawEditTarget();
   void drawEditTxPower();
   void drawEditRxGain();
-  void drawEditRssiDisplay();
   void drawTitle(const char *title);
   void drawHint(const char *dpadHint, const char *singleButtonHint);
   void drawRightAligned(int16_t y, const char *text);

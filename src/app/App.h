@@ -67,4 +67,5 @@ private:
   uint32_t _rxFlashStartMs = 0;
   uint32_t _lastNoiseSampleMs = 0;
   uint32_t _lastDisplayRefreshMs = 0;
+  uint32_t _nextAutoPingMs = 0;  
 };

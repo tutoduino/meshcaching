@@ -23,7 +23,12 @@ constexpr uint8_t kPayloadTrace = 0x09;  // "trace a path": the native MeshCore 
 
 constexpr size_t kMaxPacketLen = 256;
 constexpr size_t kAdvertPubkeyLen = 32;  // an advert carries the full public key
-constexpr size_t kTracePingLen = 12;     // header + path_len + tag + auth + flags + 1 hash
+
+// TRACE ping size: fixed part + one hash of 1, 2, 4 or 8 bytes
+constexpr size_t kTraceHeaderLen = 11;   // header + path_len + tag + auth + flags
+constexpr size_t kMaxTraceHashSize = 8;
+constexpr size_t kTracePingLen = kTraceHeaderLen + kMaxTraceHashSize;  // max buffer size
+
 
 // Decoded view of a packet: the pointers reference the original buffer,
 // nothing is copied.
@@ -54,10 +59,13 @@ bool lastHopId(const PacketView &pkt, const uint8_t *&id, size_t &idLen);
 bool traceTag(const PacketView &pkt, uint32_t &tag);
 
 // Builds a zero-hop TRACE ping to a single node, identified by the
-// first byte of its public key hash. out must be at least
-// kTracePingLen bytes long; returns the size written.
+// first hashSize bytes of its public key. hashSize must be 1, 2, 4 or 8
+// (it is encoded in the flags byte: 0, 1, 2 or 3). out must be at least
+// kTracePingLen bytes long; returns the size written, or 0 if hashSize
+// is invalid.
 // Payload format (MeshCore wiki, "Companion Radio Protocol"):
 //   [tag 4B][auth_code 4B][flags 1B][list of hashes to trace]
-size_t buildTracePing(uint8_t *out, uint32_t tag, uint8_t targetHash);
+size_t buildTracePing(uint8_t *out, uint32_t tag,
+                      const uint8_t *targetHash, uint8_t hashSize);
 
 }  // namespace meshcore

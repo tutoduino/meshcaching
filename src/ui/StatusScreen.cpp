@@ -80,29 +80,17 @@ void StatusScreen::drawMain(const MainView &v) {
     _d.setInkInverted(true);
     _d.drawText(badgeX + (badgeWidth - textWidth) / 2, 10, v.txBadge);
     _d.setInkInverted(false);
+  } else if (v.autoPing) {
+    // Automatic ping enabled: plain text (no box) so it is not confused
+    // with the transmit badge, which takes this spot when active.
+    _d.drawText(_d.width() - _d.textWidth("AUTO"), 10, "AUTO");
   }
   _d.drawHLine(0, 13, _d.width());
 
-  if (v.rssiValid && v.rssiDisplay == RssiDisplayMode::kBoth) {
-    // --- Average RSSI (left) and despread RSSI (right), side by side,
-    // each centered in its own half of the screen ---
-    const int16_t half = _d.width() / 2;
-    _d.setFont(Font::kSmall);
-    _d.drawText((half - _d.textWidth("RSSI")) / 2, 25, "RSSI");
-    _d.drawText(half + (half - _d.textWidth("DESPREAD")) / 2, 25, "DESPREAD");
-    _d.setFont(Font::kMenu);
-    snprintf(buf, sizeof(buf), "%d", (int)lroundf(v.rssi));
-    _d.drawText((half - _d.textWidth(buf)) / 2, 45, buf);
-    snprintf(buf, sizeof(buf), "%d", (int)lroundf(v.despreadRssi));
-    _d.drawText(half + (half - _d.textWidth(buf)) / 2, 45, buf);
-    _d.drawBox(half - 1, 17, 1, 30);  // separator between the columns
-  } else if (v.rssiValid) {
-    // --- A single value, large and untitled: all the focus on it ---
-    float value = v.rssiDisplay == RssiDisplayMode::kDespreadOnly
-                      ? v.despreadRssi
-                      : v.rssi;
+  if (v.rssiValid) {
+    // --- Average RSSI, large and untitled: all the focus on it ---
     _d.setFont(Font::kBig);
-    snprintf(buf, sizeof(buf), "%d", (int)lroundf(value));
+    snprintf(buf, sizeof(buf), "%d", (int)lroundf(v.rssi));
     uint16_t w = _d.textWidth(buf);
     int16_t x = (_d.width() - w) / 2;
     _d.drawText(x, 44, buf);

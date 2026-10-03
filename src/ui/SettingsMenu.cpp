@@ -41,8 +41,7 @@ SettingsMenu::Action SettingsMenu::translate(const ButtonEvent &event) const {
       if (event.longPress) {
         return Action::Select;
       }
-      return (_mode == Mode::EditTarget || _mode == Mode::EditRxGain ||
-              _mode == Mode::EditRssiDisplay)
+      return (_mode == Mode::EditTarget || _mode == Mode::EditRxGain)
                  ? Action::Up
                  : Action::Down;
     }
@@ -71,7 +70,6 @@ bool SettingsMenu::handleEvent(const ButtonEvent &event) {
     case Mode::EditTarget: handleEditTarget(action); break;
     case Mode::EditTxPower: handleEditTxPower(action); break;
     case Mode::EditRxGain: handleEditRxGain(action); break;
-    case Mode::EditRssiDisplay: handleEditRssiDisplay(action); break;
   }
   if (closed) {
     _open = false;
@@ -106,7 +104,10 @@ void SettingsMenu::handleNav(Action action, bool &closed) {
           break;
         case Item::TxPower: _mode = Mode::EditTxPower; break;
         case Item::RxGain: _mode = Mode::EditRxGain; break;
-        case Item::RssiDisplay: _mode = Mode::EditRssiDisplay; break;
+        case Item::AutoPing:
+          // Only two values: toggle directly from the list
+          _settings.autoPing = !_settings.autoPing;
+          break;
         case Item::Back: closed = true; break;
       }
       break;
@@ -214,29 +215,6 @@ void SettingsMenu::handleEditRxGain(Action action) {
   }
 }
 
-void SettingsMenu::handleEditRssiDisplay(Action action) {
-  constexpr uint8_t kChoiceCount = 3;  // BOTH / RSSI / DESPREAD
-  uint8_t index = (uint8_t)_settings.rssiDisplay;
-  switch (action) {
-    case Action::Up:
-      _settings.rssiDisplay = (RssiDisplayMode)((index + 1) % kChoiceCount);
-      break;
-    case Action::Down:
-      _settings.rssiDisplay =
-          (RssiDisplayMode)((index + kChoiceCount - 1) % kChoiceCount);
-      break;
-    case Action::Select:
-      _mode = Mode::Nav;
-      break;
-    case Action::Exit:
-      _settings.rssiDisplay = _backup.rssiDisplay;
-      _mode = Mode::Nav;
-      break;
-    default:
-      break;
-  }
-}
-
 uint8_t SettingsMenu::nibble(uint8_t index) const {
   uint8_t byte = _settings.targetPrefix[index / 2];
   return index % 2 == 0 ? (byte >> 4) : (byte & 0x0F);
@@ -253,15 +231,6 @@ const char *SettingsMenu::rxGainLabel(RxGainMode mode) {
     case RxGainMode::kNone: return "AUCUN";
     case RxGainMode::kSxBoost: return "RX BOOST";
     case RxGainMode::kFemLna: return "FEM LNA";
-  }
-  return "?";
-}
-
-const char *SettingsMenu::rssiDisplayLabel(RssiDisplayMode mode) {
-  switch (mode) {
-    case RssiDisplayMode::kBoth: return "R+D";
-    case RssiDisplayMode::kRssiOnly: return "RSSI";
-    case RssiDisplayMode::kDespreadOnly: return "DESPREAD";
   }
   return "?";
 }
@@ -293,7 +262,6 @@ void SettingsMenu::draw() {
     case Mode::EditTarget: drawEditTarget(); break;
     case Mode::EditTxPower: drawEditTxPower(); break;
     case Mode::EditRxGain: drawEditRxGain(); break;
-    case Mode::EditRssiDisplay: drawEditRssiDisplay(); break;
   }
   _d.send();
 }
@@ -322,9 +290,9 @@ void SettingsMenu::drawNav() {
         _d.drawText(8, y, "Gain RX");
         drawRightAligned(y, rxGainLabel(_settings.rxGainMode));
         break;
-      case Item::RssiDisplay:
-        _d.drawText(8, y, "Affichage");
-        drawRightAligned(y, rssiDisplayLabel(_settings.rssiDisplay));
+      case Item::AutoPing:
+        _d.drawText(8, y, "Ping auto");
+        drawRightAligned(y, _settings.autoPing ? "OUI" : "NON");
         break;
       case Item::Back:
         _d.drawText(8, y, "Retour");
@@ -363,14 +331,6 @@ void SettingsMenu::drawEditTxPower() {
 void SettingsMenu::drawEditRxGain() {
   drawTitle("Gain RX");
   const char *label = rxGainLabel(_settings.rxGainMode);
-  _d.setFont(Font::kMenu);
-  _d.drawText((_d.width() - _d.textWidth(label)) / 2, 42, label);
-  drawHint("OK: valider", "clic: suivant  long: OK");
-}
-
-void SettingsMenu::drawEditRssiDisplay() {
-  drawTitle("Affichage");
-  const char *label = rssiDisplayLabel(_settings.rssiDisplay);
   _d.setFont(Font::kMenu);
   _d.drawText((_d.width() - _d.textWidth(label)) / 2, 42, label);
   drawHint("OK: valider", "clic: suivant  long: OK");
