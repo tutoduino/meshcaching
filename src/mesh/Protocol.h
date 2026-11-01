@@ -20,6 +20,7 @@ constexpr uint8_t kRouteTransportDirect = 0x03;
 
 constexpr uint8_t kPayloadAdvert = 0x04;
 constexpr uint8_t kPayloadTrace = 0x09;  // "trace a path": the native MeshCore ping
+constexpr uint8_t kPayloadRawCustom = 0x0F;
 
 constexpr size_t kMaxPacketLen = 256;
 constexpr size_t kAdvertPubkeyLen = 32;  // an advert carries the full public key
