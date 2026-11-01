@@ -368,46 +368,85 @@ void App::sendTracePing() {
   }
 }
 
-bool App::packetComesFromTarget(const uint8_t *packet, size_t len) {
-  if (len < 2) {
+bool App::packetComesFromTarget(const uint8_t *packet, size_t len)
+{
+  if (len < 2)
+  {
     return false;
   }
 
-  uint8_t routeType   = packet[0] & 0x03;
+  uint8_t routeType = packet[0] & 0x03;
   uint8_t payloadType = (packet[0] >> 2) & 0x0F;
 
-  // Only direct-route TRACE packets are of interest
-  if (payloadType != meshcore::kPayloadTrace ||
-      routeType != meshcore::kRouteDirect) {
+  // We are only interested in packets that are either:
+  // TRACE reply (ROUTE_TYPE_DIRECT, PAYLOAD_TYPE_TRACE)
+  // RAW_CUSTOM packet (ROUTE_TYPE_FLOOD, PAYLOAD_TYPE_RAW_CUSTOM)
+
+  if (routeType != meshcore::kRouteDirect &&
+      routeType != meshcore::kRouteFlood)
+  {
     return false;
   }
 
-  // Number of SNR bytes in the path = hops already done.
-  // 0 = original packet (sent by the node that started the trace), not a reply.
-  uint8_t hopCount = packet[1] & 0x3F;
-  if (hopCount == 0) {
+  if (payloadType != meshcore::kPayloadTrace &&
+      payloadType != meshcore::kPayloadRawCustom)
+  {
     return false;
   }
 
-  // The payload starts after the SNR bytes (1 byte per hop)
-  size_t offset = 2 + hopCount;
-  if (offset + 9 > len) {
-    return false;
+  // Check the trace reply: the last hop in the traced path must match the target repeater's public key prefix. 
+  // The reply is a regular MeshCore packet, with the payload starting after the SNR bytes (1 byte per hop). 
+  //The payload contains the tag, auth, flags, and the path hashes (1, 2, 4 or 8 bytes each). 
+  // The last node that relayed = hash #(hopCount-1) of the traced path.
+  if (payloadType == meshcore::kPayloadTrace)
+  {
+    Serial.printf("TRACE packet received: len=%u\n", (unsigned)len);
+    // Number of SNR bytes in the path = hops already done.
+    // 0 = original packet (sent by the node that started the trace), not a reply by the repeater.
+    uint8_t hopCount = packet[1] & 0x3F;
+    if (hopCount == 0)
+    {
+      return false;
+    }
+
+    // The payload starts after the SNR bytes (1 byte per hop)
+    size_t offset = 2 + hopCount;
+    if (offset + 9 > len)
+    {
+      return false;
+    }
+    const uint8_t *payload = packet + offset;
+
+    // TRACE payload: tag(4) + auth(4) + flags(1) + path hashes
+    uint8_t hashSize = 1 << (payload[8] & 0x03); // 1, 2, 4 or 8 bytes
+    size_t hashesLen = len - offset - 9;
+    if ((size_t)hopCount * hashSize > hashesLen)
+    {
+      return false;
+    }
+
+    // Last node that relayed = hash #(hopCount-1) of the traced path
+    const uint8_t *lastHop = payload + 9 + (size_t)(hopCount - 1) * hashSize;
+
+    size_t compareLen = min((size_t)hashSize, sizeof(_settings.targetPrefix));
+    return memcmp(lastHop, _settings.targetPrefix, compareLen) == 0;
+  } else if (payloadType == meshcore::kPayloadRawCustom)
+  {
+    Serial.printf("RAW_CUSTOM packet received: len=%u\n", (unsigned)len);
+    Serial.printf("RAW_CUSTOM packet: %02X %02X %02X %02X %02X %02X...\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
+    // Check the RAW_CUSTOM packet. It must contain 'MCB' followed by target repeater public key prefix (first 2 bytes). 
+    if (len < 5)
+    {
+      return false;
+    }
+    if (packet[2] != 'M' || packet[3] != 'C' || packet[4] != 'B')
+    {
+      return false;
+    }
+    size_t compareLen = 2;
+    return memcmp(packet + 5, _settings.targetPrefix, compareLen) == 0;
   }
-  const uint8_t *payload = packet + offset;
-
-  // TRACE payload: tag(4) + auth(4) + flags(1) + path hashes
-  uint8_t hashSize = 1 << (payload[8] & 0x03);  // 1, 2, 4 or 8 bytes
-  size_t hashesLen = len - offset - 9;
-  if ((size_t)hopCount * hashSize > hashesLen) {
-    return false;
-  }
-
-  // Last node that relayed = hash #(hopCount-1) of the traced path
-  const uint8_t *lastHop = payload + 9 + (size_t)(hopCount - 1) * hashSize;
-
-  size_t compareLen = min((size_t)hashSize, sizeof(_settings.targetPrefix));
-  return memcmp(lastHop, _settings.targetPrefix, compareLen) == 0;
+  return false;
 }
 
 void App::pumpRadio() {
