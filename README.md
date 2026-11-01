@@ -94,15 +94,12 @@ mais seulement comme valeur d'usine, modifiable ensuite via le menu.
 ## Utilisation
 
 Écran principal : le RSSI du répéteur cible en grand, avec le SNR en
-dessous. Deux mesures sont disponibles (cf. le réglage *Affichage*) — le
-RSSI moyenné sur le paquet et celui du despreader (`SignalRssiPkt`, estimé
-après désétalement du signal LoRa), qui reste significatif sous le plancher
-de bruit. La dernière mesure reste affichée jusqu'à la suivante ; un logo
+dessous. La dernière mesure reste affichée jusqu'à la suivante ; un logo
 de sommeil (zZZ) occupe l'écran tant que rien n'a encore été reçu.
 
 L'écran clignote (inversion) quand une réponse valide rafraîchit les
 mesures, et une barre en bas indique le réarmement de l'émission (au plus
-un ping toutes les 5 s) : pleine dès l'ordre d'émission, gelée pendant le
+un ping toutes les 10 s) : pleine dès l'ordre d'émission, gelée pendant le
 LBT, décroissante après l'émission réelle — et absente si le LBT a
 abandonné.
 
@@ -129,8 +126,7 @@ Quatre réglages, persistés (NVS sur ESP32, LittleFS interne sur nRF52) :
 - **Gain RX** : `AUCUN` / `RX BOOST` (le +2 dB interne du SX126x, défaut
   partout) / `FEM LNA` (cartes à FEM : Heltec V4 et T096, exclusif du boost).
   Attention : le LNA du FEM ajoute son gain au RSSI affiché ;
-- **Affichage** : `RSSI` (défaut) / `DESPREAD`, une seule mesure en grand,
-  ou `R+D` pour les deux côte à côte.
+- **Ping auto** : `NON` (défaut) / `OUI`, envoi un ping vers le répéteur toutes les 10 secondes ;
 
 Navigation : sur le L1 et le T-Deck, Up/Down navigue ou modifie, Left/Right
 change de digit, Ok valide, Back annule l'édition ou sort du menu. Sur les
